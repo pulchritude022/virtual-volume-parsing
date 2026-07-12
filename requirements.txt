@@ -1,0 +1,4 @@
+# Stage 0 (fetch_images.py) needs no third-party packages — stdlib only.
+# Stage 1 (transcribe.py) needs:
+anthropic>=0.116        # adaptive thinking + output_config.effort (older SDKs reject these)
+Pillow>=10              # image crop/contrast preprocessing

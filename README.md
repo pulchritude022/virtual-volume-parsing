@@ -26,12 +26,20 @@ docs/                         Stage 4/5 — generated wiki (private)
 
 ## Quick start
 ```bash
+# 0. (once) install Stage-1 deps; Stage-0 fetch is stdlib-only
+pip install -r requirements.txt
+
 # 1. Provide your logged-in ScotlandsPeople session cookie:
 cp secrets/cookie.env.example secrets/cookie.env    # then paste your SSESS… cookie
 
 # 2. Smoke-test, then pull the volume (free-to-view images; no credits spent):
 python scripts/fetch_images.py --volume CH2-341-1 --start 1 --end 5
 python scripts/fetch_images.py --volume CH2-341-1
+
+# 3. Transcribe with Claude Opus (needs ANTHROPIC_API_KEY or `ant auth login`).
+#    Calibrate on a few pages first — this bills the Anthropic API per page.
+python scripts/transcribe.py --volume CH2-341-1 --start 2 --end 6
+python scripts/transcribe.py --volume CH2-341-1        # whole volume
 ```
 
 ## Ethics & copyright

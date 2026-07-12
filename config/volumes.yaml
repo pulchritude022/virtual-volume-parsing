@@ -1,0 +1,36 @@
+# Volume registry. The pipeline is volume-generic; add entries to process more
+# ScotlandsPeople Virtual Volumes (or other image sources) later.
+#
+# `id` doubles as the folder name under data/<id>/.
+
+volumes:
+  - id: CH2-341-1
+    title: "Stranraer Presbytery, Minutes (1641-1652)"
+    reference: "CH2/341/1"
+    gaz: GAZ00156
+    source: scotlandspeople-virtual-volumes
+    images: 257            # each image is a TWO-PAGE opening (~500 MS pages)
+    court: presbytery
+    place: "Stranraer, Rhins of Galloway, Wigtownshire"
+    languages: [scots, latin]
+    period: "1641-1652"
+    year_sections:         # image_number where each year's minutes begin (from viewer contents)
+      1641: 1
+      1642: 16
+      1643: 36
+      1644: 55
+      1645: 71
+      1646: 87
+      1647: 105
+      1648: 126
+      1649: 159
+      1650: 182
+      1651: 218
+      1652: 248
+    focus_case: "James & Alexander MacCulloch of Inshanks and Mool (folios 1-14)"
+
+# Future inputs (same Stage-1 machinery, different source handling):
+#   - id: mccollough-journal-1796
+#     title: "Capt. John McCollough journal (German passage, ~1796)"
+#     source: local-scan
+#     languages: [german]

@@ -1,0 +1,35 @@
+# --- Secrets: never commit session cookies / credentials ---
+secrets/*
+!secrets/.gitkeep
+!secrets/cookie.env.example
+
+# --- Source images: copyright-restricted (NRS Crown copyright), large binaries ---
+# Kept local by default. See PLAN.md (hosting decision: fully private, images not published).
+data/**/images/
+*.jpg
+*.jpeg
+*.png
+!docs/**/*.png
+!reference/**/*.png
+
+# --- Python ---
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# --- Node ---
+node_modules/
+dist/
+.cache/
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# --- Work artifacts ---
+*.log
+.env

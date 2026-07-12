@@ -1,0 +1,47 @@
+{
+  "volume": "CH2-341-1",
+  "gaz": "GAZ00156",
+  "title": "Stranraer Presbytery, Minutes (1641-1652), CH2/341/1",
+  "total_images": 257,
+  "images": {
+    "1": {
+      "image_number": 1,
+      "status": "redirect",
+      "redirected_to": 2,
+      "note": "image_number=1 redirects to 2; not a distinct page"
+    },
+    "2": {
+      "image_number": 2,
+      "status": "ok",
+      "path": "data\\CH2-341-1\\images\\img_0002.jpg",
+      "bytes": 333988,
+      "sha256": "e57f82a6c8c2b35ce50b5c128eb158740da4f95d6299c76fe214299581a49c31",
+      "content_type": "image/jpg",
+      "token": "aTdHL1J5a0E3NThVTGVtVzZCRjRxTkx0L3lNUmowZDluTGVNdkkvWi8ydnh6ekUvd0x2a1phUnZ5Q2Jvam9IQmt6bDJ3K1U4REEvRmkwMDdxaW9CVEJGajNubnBSYTYxWk9aRzVjcW5DcFJwS1Rmb240NWlyWGRTZ2dkN1UvUkp3Q2VPeUt6SUxNVGpIVDZndU1wMElVTnA=",
+      "source_url": "https://www.scotlandspeople.gov.uk/virtual-volumes/volume-images/volume_data-CH2-341-1/GAZ00156?image_number=2",
+      "fetched_at": "2026-07-12T23:44:51+00:00"
+    },
+    "3": {
+      "image_number": 3,
+      "status": "ok",
+      "path": "data\\CH2-341-1\\images\\img_0003.jpg",
+      "bytes": 344713,
+      "sha256": "63f760d9cef8bd59a82a18c8675239735e6727374e1c730664c1fad3d02cfcbd",
+      "content_type": "image/jpg",
+      "token": "aTdHL1J5a0E3NThVTGVtVzZCRjRxTkx0L3lNUmowZDluTGVNdkkvWi8ydnh6ekUvd0x2a1phUnZ5Q2Jvam9IQmt6bDJ3K1U4REEvRmkwMDdxaW9CVEJGajNubnBSYTYxWmVaRzVjcW5DcFJwS1Rmb240NWlyWGRTZ2dkN1UvUkp3Q2VPeUt6SUxNVGpIVDZndU1wMElVTm8=",
+      "source_url": "https://www.scotlandspeople.gov.uk/virtual-volumes/volume-images/volume_data-CH2-341-1/GAZ00156?image_number=3",
+      "fetched_at": "2026-07-12T23:44:55+00:00"
+    },
+    "4": {
+      "image_number": 4,
+      "status": "ok",
+      "path": "data\\CH2-341-1\\images\\img_0004.jpg",
+      "bytes": 345988,
+      "sha256": "73032636853f98a95bd108470a7f9c16ec1ea1c48161767ed89f5bca8e681899",
+      "content_type": "image/jpg",
+      "token": "aTdHL1J5a0E3NThVTGVtVzZCRjRxTkx0L3lNUmowZDluTGVNdkkvWi8ydnh6ekUvd0x2a1phUnZ5Q2Jvam9IQmt6bDJ3K1U4REEvRmkwMDdxaW9CVEJGajNubnBSYTYxWXVaRzVjcW5DcFJwS1Rmb240NWlyWGRTZ2dkN1UvUkp3Q2VPeUt6SUxNVGpIVDZndU1wMElVTnY=",
+      "source_url": "https://www.scotlandspeople.gov.uk/virtual-volumes/volume-images/volume_data-CH2-341-1/GAZ00156?image_number=4",
+      "fetched_at": "2026-07-12T23:45:00+00:00"
+    }
+  }
+}

@@ -11,6 +11,10 @@ data/**/images/
 *.png
 !docs/**/*.png
 !reference/**/*.png
+# Source-image bundles (Crown copyright) — never publish
+data/**/*.zip
+*.tif
+*.tiff
 
 # --- Python ---
 __pycache__/

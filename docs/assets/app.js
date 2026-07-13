@@ -160,7 +160,7 @@ async function initHome() {
       renderHero(primary),
       renderCopyrightCallout(),
       renderVolumeCards(volumes),
-      renderContents(index),
+      renderContentsLink(index),
       renderEntityIndex('Events & controversies', index.events, 'event'),
       renderEntityIndex('People', index.people, 'person'),
       renderEntityIndex('Places', index.places, 'place'),
@@ -210,6 +210,17 @@ function renderVolumeCards(volumes) {
           el('div', { class: 'progress-label' }, `${done} of ${total} images transcribed · ${pct}%`)),
       );
     }));
+}
+
+/* Compact teaser on the overview page — the full page list now lives on its
+   own page (contents.html) so the overview can stay focused on the wiki
+   (events/people/places/topics). */
+function renderContentsLink(index) {
+  return el('div', { class: 'section' },
+    el('h2', {}, 'Contents', el('span', { class: 'count' }, `${index.pages.length} transcribed`)),
+    el('p', { class: 'hint' }, 'Every transcribed opening, grouped by the year its minutes begin.'),
+    el('a', { class: 'btn primary', href: `contents.html?vol=${encodeURIComponent(index.id)}` },
+      `Browse all ${index.pages.length} transcribed openings →`));
 }
 
 function renderContents(index) {
@@ -606,6 +617,30 @@ function renderEntity(volId, e) {
     renderFooter());
 }
 
+/* ---------------------------------------------------------------- contents */
+
+async function initContents() {
+  const root = $('#contents');
+  try {
+    const { volumes } = await getJSON('data/volumes.json');
+    const volId = qs('vol') || (volumes && volumes[0] && volumes[0].id);
+    if (!volId) { root.replaceChildren(el('p', { class: 'empty' }, 'No volume available.')); return; }
+    const index = await getJSON(`data/${volId}/index.json`);
+    root.replaceChildren(
+      el('div', { class: 'hero' },
+        el('div', { class: 'eyebrow' }, 'ScotlandsPeople Virtual Volume · ' + (index.reference || '')),
+        el('h1', {}, index.title || index.id)),
+      renderContents(index),
+      renderFooter(),
+    );
+  } catch (err) {
+    root.replaceChildren(el('div', { class: 'callout' },
+      el('b', {}, 'Could not load site data. '),
+      'Did you run ', el('code', {}, 'python scripts/build_site.py'),
+      ' and open this over http (not file://)? ', el('br'), err.message));
+  }
+}
+
 /* ---------------------------------------------------------------- glossary */
 
 async function initGlossary() {
@@ -642,4 +677,5 @@ document.addEventListener('DOMContentLoaded', () => {
   else if ($('#viewer')) initViewer();
   else if ($('#entity')) initEntity();
   else if ($('#glossary')) initGlossary();
+  else if ($('#contents')) initContents();
 });

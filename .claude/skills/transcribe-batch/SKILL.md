@@ -27,6 +27,13 @@ python scripts/pending.py --volume CH2-341-1 --count 10       # next N image num
 ```
 Use the printed numbers as this batch (unless the user named specific images).
 
+> **Worktree note:** page images live under `data/<volume>/images/` and are
+> gitignored (they exist only in the **main checkout**). In a git worktree that
+> folder is empty, so `pending.py`/`preprocess.py` fail with "no images dir".
+> Fix once per session by junctioning the main checkout's images in (PowerShell,
+> no admin needed):
+> `New-Item -ItemType Junction -Path data\CH2-341-1\images -Target <main-checkout>\data\CH2-341-1\images`
+
 ## 3. For each image number N in the batch
 1. Emit reading crops:
    ```
@@ -58,9 +65,11 @@ languages: [scots, latin]
 transcriber: claude-opus-4-8 (in-session)
 confidence: {left: high|medium|low, right: high|medium|low}
 status: draft-needs-review
-people: [<names as written>]
-places: [<places as written>]
-dates: [<dates mentioned>]
+people: [<names as written>]      # drives the site's People index
+places: [<places as written>]     # drives the Places index
+topics: [<kebab-case themes>]     # drives the Topics index, e.g. usury, witness-deposition
+money: [<sums / measures mentioned>]
+dates: [<dates mentioned>]        # optional; not indexed by the site builder
 ---
 
 # CH2/341/1 — Image <N> (folios <left>–<right>)
@@ -93,6 +102,23 @@ dates: [<dates mentioned>]
 ```
 (See `data/CH2-341-1/transcriptions/img_0002.md` for a worked example.)
 
+**Shape rules the site builder depends on.** `scripts/build_site.py` parses these
+files into the Stage-4 data-driven viewer under `docs/` (the markdown is the single
+source of truth; the generated `docs/data/**.json` is gitignored and rebuilt on
+deploy). To stay compatible:
+- Keep the order: `# … Image N` H1, then the two `## Folio …` sections, then a
+  final `## Notes & context`. Prose placed **between** the H1 and the first
+  `## Folio` is **not** shown in the viewer — put any page overview at the top of
+  the Notes section instead.
+- Put the `*(confidence: …)*` marker **last** on each `## Folio …` heading line. A
+  short "— descriptor" may come *before* it, never after (trailing text lands in
+  the viewer's folio label).
+- Every folio needs a `### Diplomatic transcription` holding one fenced code block
+  (the builder reads the first fence as the diplomatic text) and a `### Modern
+  English` section.
+- `people` / `places` / `topics` drive the wiki indexes — keep spellings
+  consistent across the batch so the same entity aggregates instead of splitting.
+
 ## 5. Finish the batch
 When you've done the batch (or context is getting tight — don't push into
 degraded reads), STOP and report:
@@ -101,6 +127,11 @@ degraded reads), STOP and report:
 - run `python scripts/pending.py --volume CH2-341-1 --summary` and tell the user
   the remaining count, and to **start a fresh session and run `/transcribe-batch`
   again** to continue.
+
+Before finishing, **verify the batch feeds the viewer**: run
+`python scripts/build_site.py --volume CH2-341-1` and confirm it reports your new
+page count with no errors (this is how the openings reach the Stage-4 site; the
+`docs/data/` output is gitignored and regenerated on deploy).
 
 Do not commit automatically. Leave the new `.md` files for the user to review
 (Stage 2) and commit when ready. The `data/**/.crops/` files are gitignored scratch.

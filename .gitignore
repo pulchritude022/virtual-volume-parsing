@@ -33,3 +33,4 @@ Thumbs.db
 # --- Work artifacts ---
 *.log
 .env
+data/**/.crops/       # transient reading crops emitted by preprocess.py

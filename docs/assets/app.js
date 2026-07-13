@@ -124,6 +124,7 @@ async function initHome() {
     }
     // Primary volume drives the deep sections; others just get a card.
     const primary = volumes[0];
+    HOME_VOL = primary.id;
     const index = await getJSON(`data/${primary.id}/index.json`);
 
     root.replaceChildren(
@@ -244,17 +245,27 @@ function renderEntityIndex(title, items, kind) {
     el('p', { class: 'hint' },
       kind === 'topic'
         ? 'Recurring themes across the minutes.'
-        : `Named ${title.toLowerCase()} seen so far. Dedicated cross-linked pages arrive with Stage-3 entity extraction.`));
+        : `Named ${title.toLowerCase()} across the minutes — click any name for a consolidated, cross-linked page of every mention.`));
   if (!items || !items.length) { sec.append(el('p', { class: 'empty' }, 'None yet.')); return sec; }
   const chips = el('div', { class: 'chips' });
+  const volId = HOME_VOL;
   for (const it of items) {
-    chips.append(el('span', { class: kind === 'topic' ? 'chip topic' : 'chip' },
-      cleanEntity(it.name),
-      it.count > 1 ? el('span', { class: 'n' }, it.count) : null));
+    const n = it.count > 1 ? el('span', { class: 'n' }, it.count) : null;
+    if (kind !== 'topic' && it.slug && volId) {
+      chips.append(el('a', {
+        class: 'chip link',
+        href: `entity.html?vol=${encodeURIComponent(volId)}&kind=${kind}&slug=${encodeURIComponent(it.slug)}`,
+      }, cleanEntity(it.name), n));
+    } else {
+      chips.append(el('span', { class: kind === 'topic' ? 'chip topic' : 'chip' },
+        cleanEntity(it.name), n));
+    }
   }
   sec.append(chips);
   return sec;
 }
+
+let HOME_VOL = null;
 
 /* Front-matter people sometimes carry an inline "# comment"; drop it for display. */
 function cleanEntity(name) {
@@ -470,9 +481,95 @@ function openLightbox(src) {
   lb.classList.add('open');
 }
 
+/* ------------------------------------------------------------------ entity */
+
+async function initEntity() {
+  const root = $('#entity');
+  const volId = qs('vol');
+  const kind = qs('kind');            // 'person' | 'place'
+  const slug = qs('slug');
+  if (!volId || !kind || !slug) {
+    root.replaceChildren(el('p', { class: 'empty' }, 'No entity specified.'));
+    return;
+  }
+  try {
+    const e = await getJSON(`data/${volId}/entities/${kind}/${slug}.json`);
+    document.title = `${e.name} — Stranraer Presbytery Archive`;
+    root.replaceChildren(renderEntity(volId, e));
+  } catch (err) {
+    root.replaceChildren(el('div', { class: 'callout' },
+      el('b', {}, 'Could not load this entity. '), err.message));
+  }
+}
+
+function entityChip(volId, r) {
+  const n = r.count > 1 ? el('span', { class: 'n' }, r.count) : null;
+  if (r.slug && r.kind) {
+    return el('a', { class: 'chip link',
+      href: `entity.html?vol=${encodeURIComponent(volId)}&kind=${r.kind}&slug=${encodeURIComponent(r.slug)}` },
+      cleanEntity(r.name), n);
+  }
+  return el('span', { class: 'chip' }, cleanEntity(r.name), n);
+}
+
+function renderEntity(volId, e) {
+  const kindLabel = e.kind === 'place' ? 'Place' : 'Person';
+  const head = el('div', { class: 'entity-head' },
+    el('div', { class: 'crumbs' },
+      el('a', { href: 'index.html' }, '← Overview'),
+      el('span', {}, ' · '),
+      el('span', {}, `${kindLabel} · ${e.count} opening${e.count === 1 ? '' : 's'}`)),
+    el('h1', {}, e.name));
+
+  // Variant spellings actually seen in the record.
+  const variants = (e.variants || []).filter((v) => cleanEntity(v) !== e.name);
+  const variantLine = variants.length
+    ? el('p', { class: 'variants' }, el('span', { class: 'lbl' }, 'Also written: '),
+        variants.map(cleanEntity).join(' · '))
+    : null;
+
+  // Mentions — each links into the side-by-side viewer at that opening.
+  const mentionRows = (e.mentions || []).map((m) => {
+    const foliosTxt = Array.isArray(m.folios_ref) ? `folios ${m.folios_ref.join('–')}` : '';
+    const sub = [foliosTxt, m.sitting_date].filter(Boolean).join(' · ');
+    return el('a', { class: 'page-row',
+      href: `viewer.html?vol=${encodeURIComponent(volId)}&img=${encodeURIComponent(m.slug)}` },
+      el('span', { class: 'imgno' }, `#${m.image_number ?? '?'}`),
+      el('span', { class: 'pt' },
+        el('span', { class: 't' }, m.title || m.slug), el('br'),
+        sub ? el('span', { class: 's' }, sub) : null));
+  });
+
+  const section = (title, kids) => kids && kids.length
+    ? el('div', { class: 'section' }, el('h2', {}, title), ...kids) : null;
+
+  const relatedChips = (label, items) => (items && items.length)
+    ? el('div', { class: 'rel-block' }, el('div', { class: 'lbl' }, label),
+        el('div', { class: 'chips' }, ...items.map((r) => entityChip(volId, r))))
+    : null;
+
+  const related = [
+    relatedChips('People', e.related_people),
+    relatedChips('Places', e.related_places),
+    relatedChips('Topics', (e.topics || []).map((t) => ({ ...t, slug: null }))),
+  ].filter(Boolean);
+
+  return el('div', { class: 'entity-page' },
+    head,
+    variantLine,
+    el('p', { class: 'hint' },
+      'Consolidated from the transcribed openings below. This is an evidence index — ',
+      'every appearance of this ', e.kind, ' with links to the manuscript opening; ',
+      'a written biographical sketch will be layered on in a later pass.'),
+    section(`Mentions (${mentionRows.length})`, mentionRows),
+    section('Appears alongside', related),
+    renderFooter());
+}
+
 /* --------------------------------------------------------------- dispatch */
 
 document.addEventListener('DOMContentLoaded', () => {
   if ($('#home')) initHome();
   else if ($('#viewer')) initViewer();
+  else if ($('#entity')) initEntity();
 });

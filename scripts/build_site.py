@@ -176,6 +176,81 @@ def image_slug_to_number(slug: str) -> int | None:
     return int(m.group(1)) if m else None
 
 
+# --------------------------------------------------------------------------- #
+# Stage 3 — entity extraction (people / places consolidated across openings)
+# --------------------------------------------------------------------------- #
+
+_BRACKET_RE = re.compile(r"\[[^\]]*\]")           # editorial [expansion] / [?] / [—]
+_NONWORD_RE = re.compile(r"[^a-z0-9]+")
+
+
+def clean_entity(name: str) -> str:
+    """Display form: drop any inline '# comment', collapse whitespace."""
+    return re.sub(r"\s+", " ", str(name).split("#")[0]).strip()
+
+
+def entity_key(name: str) -> str:
+    """Conservative merge key: lowercase, strip editorial brackets & punctuation.
+
+    Merges spelling-identical variants that differ only in editorial marks
+    (e.g. 'Ardwell' vs 'Ardwell [?]') without over-merging distinct names.
+    """
+    base = _BRACKET_RE.sub(" ", clean_entity(name).lower())
+    return re.sub(r"\s+", " ", _NONWORD_RE.sub(" ", base)).strip()
+
+
+def entity_slug(key: str) -> str:
+    return _NONWORD_RE.sub("-", key).strip("-") or "unknown"
+
+
+class EntityAccumulator:
+    """Collects mentions + co-occurrences for one kind (person/place)."""
+
+    def __init__(self, kind: str):
+        self.kind = kind
+        self.by_key: dict[str, dict] = {}
+
+    def note(self, raw_name: str, page_ref: dict) -> str | None:
+        key = entity_key(raw_name)
+        if not key:
+            return None
+        rec = self.by_key.setdefault(
+            key,
+            {"key": key, "display": Counter(), "mentions": {},
+             "co_people": Counter(), "co_places": Counter(), "topics": Counter()},
+        )
+        rec["display"][clean_entity(raw_name)] += 1
+        rec["mentions"].setdefault(page_ref["slug"], page_ref)
+        return key
+
+    def finalize(self, slug_taken: set[str]) -> list[dict]:
+        out = []
+        for rec in self.by_key.values():
+            name = rec["display"].most_common(1)[0][0]
+            slug = entity_slug(rec["key"])
+            base, n = slug, 2
+            while slug in slug_taken:
+                slug, n = f"{base}-{n}", n + 1
+            slug_taken.add(slug)
+            mentions = sorted(
+                rec["mentions"].values(),
+                key=lambda m: (m["image_number"] is None, m["image_number"] or 0),
+            )
+            out.append({
+                "kind": self.kind,
+                "slug": slug,
+                "name": name,
+                "variants": [v for v, _ in rec["display"].most_common()],
+                "count": len(mentions),
+                "mentions": mentions,
+                "related_people": [dict(name=k, count=c) for k, c in rec["co_people"].most_common(24)],
+                "related_places": [dict(name=k, count=c) for k, c in rec["co_places"].most_common(24)],
+                "topics": [dict(name=k, count=c) for k, c in rec["topics"].most_common(24)],
+            })
+        out.sort(key=lambda e: (-e["count"], e["name"].lower()))
+        return out
+
+
 def build_volume(vol_cfg: dict, with_images: bool) -> dict | None:
     volume_id = vol_cfg["id"]
     tdir = DATA / volume_id / "transcriptions"
@@ -193,6 +268,8 @@ def build_volume(vol_cfg: dict, with_images: bool) -> dict | None:
     people = Counter()
     places = Counter()
     topics = Counter()
+    person_acc = EntityAccumulator("person")
+    place_acc = EntityAccumulator("place")
     page_index: list[dict] = []
 
     md_files = sorted(tdir.glob("*.md"))
@@ -227,12 +304,49 @@ def build_volume(vol_cfg: dict, with_images: bool) -> dict | None:
             image_href = None
             image_available = False
 
-        for name in fm.get("people", []) or []:
-            people[str(name).strip()] += 1
-        for place in fm.get("places", []) or []:
-            places[str(place).strip()] += 1
-        for topic in fm.get("topics", []) or []:
-            topics[str(topic).strip()] += 1
+        page_people = [clean_entity(n) for n in (fm.get("people") or []) if clean_entity(n)]
+        page_places = [clean_entity(n) for n in (fm.get("places") or []) if clean_entity(n)]
+        page_topics = [clean_entity(n) for n in (fm.get("topics") or []) if clean_entity(n)]
+        for name in page_people:
+            people[name] += 1
+        for place in page_places:
+            places[place] += 1
+        for topic in page_topics:
+            topics[topic] += 1
+
+        # Feed entity accumulators with a compact page reference + co-occurrences.
+        page_ref = {
+            "slug": slug,
+            "image_number": number,
+            "title": parsed["title"] or f"Image {number}",
+            "year": fm.get("year"),
+            "sitting_date": str(fm.get("sitting_date")) if fm.get("sitting_date") else None,
+            "folios_ref": fm.get("folios"),
+        }
+        for name in page_people:
+            key = person_acc.note(name, page_ref)
+            if key is None:
+                continue
+            rec = person_acc.by_key[key]
+            for other in page_people:
+                if entity_key(other) != key:
+                    rec["co_people"][other] += 1
+            for pl in page_places:
+                rec["co_places"][pl] += 1
+            for tp in page_topics:
+                rec["topics"][tp] += 1
+        for place in page_places:
+            key = place_acc.note(place, page_ref)
+            if key is None:
+                continue
+            rec = place_acc.by_key[key]
+            for other in page_places:
+                if entity_key(other) != key:
+                    rec["co_places"][other] += 1
+            for pers in page_people:
+                rec["co_people"][pers] += 1
+            for tp in page_topics:
+                rec["topics"][tp] += 1
 
         page = {
             "volume": volume_id,
@@ -279,6 +393,47 @@ def build_volume(vol_cfg: dict, with_images: bool) -> dict | None:
             }
         )
 
+    # ---- Stage 3: finalize & write consolidated entity pages --------------- #
+    slug_taken: set[str] = set()
+    persons = person_acc.finalize(slug_taken)
+    places_e = place_acc.finalize(slug_taken)
+    # name(clean) -> {slug, kind} so co-occurrence links can resolve to pages.
+    resolve = {}
+    for e in persons:
+        for v in e["variants"]:
+            resolve[entity_key(v)] = {"slug": e["slug"], "kind": "person"}
+    for e in places_e:
+        for v in e["variants"]:
+            resolve.setdefault(entity_key(v), {"slug": e["slug"], "kind": "place"})
+
+    def _link(items):
+        out = []
+        for it in items:
+            r = resolve.get(entity_key(it["name"]))
+            out.append({**it, "slug": r["slug"] if r else None,
+                        "kind": r["kind"] if r else None})
+        return out
+
+    ent_dir = out_dir / "entities"
+    for kind, coll in (("person", persons), ("place", places_e)):
+        kdir = ent_dir / kind
+        kdir.mkdir(parents=True, exist_ok=True)
+        for e in coll:
+            doc = {**e, "volume": volume_id,
+                   "related_people": _link(e["related_people"]),
+                   "related_places": _link(e["related_places"])}
+            (kdir / f"{e['slug']}.json").write_text(
+                json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    def _summ(coll):
+        return [{"slug": e["slug"], "name": e["name"], "count": e["count"]} for e in coll]
+
+    (ent_dir).mkdir(parents=True, exist_ok=True)
+    (ent_dir / "index.json").write_text(
+        json.dumps({"volume": volume_id, "people": _summ(persons),
+                    "places": _summ(places_e)}, ensure_ascii=False, indent=2),
+        encoding="utf-8")
+
     index = {
         "id": volume_id,
         "title": vol_cfg.get("title"),
@@ -292,8 +447,8 @@ def build_volume(vol_cfg: dict, with_images: bool) -> dict | None:
         "focus_case": vol_cfg.get("focus_case"),
         "transcribed_count": len(page_index),
         "pages": page_index,
-        "people": [{"name": n, "count": c} for n, c in people.most_common()],
-        "places": [{"name": n, "count": c} for n, c in places.most_common()],
+        "people": _summ(persons),
+        "places": _summ(places_e),
         "topics": [{"name": n, "count": c} for n, c in topics.most_common()],
     }
     out_dir.mkdir(parents=True, exist_ok=True)

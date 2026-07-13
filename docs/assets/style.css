@@ -175,6 +175,22 @@ a:hover { text-decoration: underline; }
   min-width: 18px; text-align: center;
 }
 .chip.topic { font-family: var(--sans); }
+/* Clickable chips → entity pages */
+a.chip.link { color: var(--accent); text-decoration: none; cursor: pointer; transition: background .12s, border-color .12s; }
+a.chip.link:hover { background: var(--bg-panel); border-color: var(--accent-soft); color: var(--accent); }
+
+/* ---- Entity (person / place) page ------------------------------------- */
+.entity-page { max-width: 860px; margin: 0 auto; }
+.entity-head { margin-bottom: 6px; }
+.entity-head h1 { font-family: var(--serif); font-size: 1.9rem; margin: 6px 0 0; }
+.crumbs { font-size: .82rem; color: var(--ink-faint); }
+.crumbs a { color: var(--accent); text-decoration: none; }
+.crumbs a:hover { text-decoration: underline; }
+.entity-page .variants { font-size: .9rem; color: var(--ink-soft); margin: 4px 0 0; }
+.entity-page .variants .lbl { color: var(--ink-faint); }
+.entity-page .hint { color: var(--ink-faint); font-size: .86rem; margin: 12px 0 22px; }
+.rel-block { margin-bottom: 14px; }
+.rel-block .lbl { font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-faint); margin-bottom: 6px; }
 
 /* ---- Page list (contents) --------------------------------------------- */
 

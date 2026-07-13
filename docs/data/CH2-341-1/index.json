@@ -1,0 +1,231 @@
+{
+  "id": "CH2-341-1",
+  "title": "Stranraer Presbytery, Minutes (1641-1652)",
+  "reference": "CH2/341/1",
+  "court": "presbytery",
+  "place": "Stranraer, Rhins of Galloway, Wigtownshire",
+  "period": "1641-1652",
+  "languages": [
+    "scots",
+    "latin"
+  ],
+  "total_images": 257,
+  "year_sections": {
+    "1641": 1,
+    "1642": 16,
+    "1643": 36,
+    "1644": 55,
+    "1645": 71,
+    "1646": 87,
+    "1647": 105,
+    "1648": 126,
+    "1649": 159,
+    "1650": 182,
+    "1651": 218,
+    "1652": 248
+  },
+  "focus_case": "James & Alexander MacCulloch of Inshanks and Mool (folios 1-14)",
+  "transcribed_count": 2,
+  "pages": [
+    {
+      "slug": "img_0002",
+      "image_number": 2,
+      "title": "CH2/341/1 — Image 2 (folios 1–2), 3 November 1641",
+      "year": 1641,
+      "sitting_date": "1641-11-03",
+      "status": "draft-needs-review",
+      "confidence": {
+        "folio_1": "high",
+        "folio_2": "medium"
+      },
+      "folios_ref": [
+        1,
+        2
+      ],
+      "people_count": 6,
+      "topics": [
+        "presbytery-constitution",
+        "witness-deposition",
+        "loan",
+        "annualrent/usury"
+      ],
+      "image_available": false
+    },
+    {
+      "slug": "img_0003",
+      "image_number": 3,
+      "title": "CH2/341/1 — Image 3 (folios 2v–3), Sept 1642",
+      "year": 1642,
+      "sitting_date": "1642-09-21",
+      "status": "draft-needs-review",
+      "confidence": {
+        "left": "low",
+        "right": "low"
+      },
+      "folios_ref": [
+        "2v",
+        3
+      ],
+      "people_count": 11,
+      "topics": [
+        "witness-deposition",
+        "accusations-of-oppression",
+        "false-testament",
+        "tumult-of-Stranraer",
+        "referral-to-Kirk-commissioners",
+        "parish-visitation"
+      ],
+      "image_available": false
+    }
+  ],
+  "people": [
+    {
+      "name": "John McDowall of Lochans",
+      "count": 2
+    },
+    {
+      "name": "John Levingston",
+      "count": 1
+    },
+    {
+      "name": "Mr Gilbert",
+      "count": 1
+    },
+    {
+      "name": "John McCloy of Lochans",
+      "count": 1
+    },
+    {
+      "name": "John McKim",
+      "count": 1
+    },
+    {
+      "name": "laird of French, younger",
+      "count": 1
+    },
+    {
+      "name": "Peter McCulloch",
+      "count": 1
+    },
+    {
+      "name": "Mr Alexander Turnbull",
+      "count": 1
+    },
+    {
+      "name": "Mr John Livingston",
+      "count": 1
+    },
+    {
+      "name": "Patrick Wilson",
+      "count": 1
+    },
+    {
+      "name": "John Wilson",
+      "count": 1
+    },
+    {
+      "name": "McDowell (younger, of Galloway?)",
+      "count": 1
+    },
+    {
+      "name": "John McKinna",
+      "count": 1
+    },
+    {
+      "name": "George Neilson",
+      "count": 1
+    },
+    {
+      "name": "James Blair",
+      "count": 1
+    },
+    {
+      "name": "Marion Tolber[?] / Conochie[?]",
+      "count": 1
+    }
+  ],
+  "places": [
+    {
+      "name": "Stranraer",
+      "count": 2
+    },
+    {
+      "name": "Lochans",
+      "count": 2
+    },
+    {
+      "name": "Glenluce",
+      "count": 1
+    },
+    {
+      "name": "Inch",
+      "count": 1
+    },
+    {
+      "name": "Stoneykirk",
+      "count": 1
+    },
+    {
+      "name": "Leswalt",
+      "count": 1
+    },
+    {
+      "name": "Kirkcolm",
+      "count": 1
+    },
+    {
+      "name": "Portpatrick",
+      "count": 1
+    },
+    {
+      "name": "Kirkmaiden",
+      "count": 1
+    },
+    {
+      "name": "Edinburgh",
+      "count": 1
+    },
+    {
+      "name": "parish (Stoneykirk?)",
+      "count": 1
+    }
+  ],
+  "topics": [
+    {
+      "name": "witness-deposition",
+      "count": 2
+    },
+    {
+      "name": "presbytery-constitution",
+      "count": 1
+    },
+    {
+      "name": "loan",
+      "count": 1
+    },
+    {
+      "name": "annualrent/usury",
+      "count": 1
+    },
+    {
+      "name": "accusations-of-oppression",
+      "count": 1
+    },
+    {
+      "name": "false-testament",
+      "count": 1
+    },
+    {
+      "name": "tumult-of-Stranraer",
+      "count": 1
+    },
+    {
+      "name": "referral-to-Kirk-commissioners",
+      "count": 1
+    },
+    {
+      "name": "parish-visitation",
+      "count": 1
+    }
+  ]
+}

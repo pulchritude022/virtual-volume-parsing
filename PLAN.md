@@ -54,14 +54,23 @@ volumes and to the ~1796 German-handwriting journal later.
   offices, money) with **page citations** and variant spellings; resolve cross-references and
   co-occurrences. Produces the material for Dad's "overview/summary" and "biographical sketches".
 
-### Stage 4 — Wiki generation
-- Generate cross-linked pages per person/place/event + indexes, timeline, relationship graph, and a
-  map of the Rhins parishes. Static-site generator (candidate: MkDocs Material or Astro), image
-  side-by-side retained in the private build.
+### Stage 4 — Wiki generation  🟡 scaffold in place
+- **Done:** `scripts/build_site.py` parses the transcription markdown (front-matter + folio
+  sections) into JSON under `docs/data/`, and a dependency-free static site (`docs/index.html`,
+  `docs/viewer.html`) renders the **side-by-side viewer** (image ⟷ diplomatic ⟷ modern English)
+  plus overview/contents and seed People/Places/Topics indexes. No framework, no build tooling —
+  regenerate with `python scripts/build_site.py`.
+- **Next:** promote the entity indexes into cross-linked pages per person/place/event (fed by
+  Stage-3 extraction), add a timeline, relationship graph, and a map of the Rhins parishes.
 
-### Stage 5 — Private hosting
-- Private GitHub repo; site served locally or via a private/authenticated channel (not public
-  Pages). Revisit public display only if NRS permission is obtained.
+### Stage 5 — Hosting
+- **Split by copyright, decided 2026-07-12:** the **images** stay private (gitignored, never
+  embedded; the site links back to ScotlandsPeople) while the **transcriptions/translations** — the
+  project's own work — can be published. The image-free site is therefore GitHub-Pages-safe and
+  stays within the NRS 20-image public cap.
+- Pages-ready via `docs/` + `.nojekyll`. Publishing is a deliberate opt-in (Settings → Pages →
+  Deploy from a branch → `/docs`); until then it runs locally via `http.server`. Revisit showing
+  images publicly only if NRS permission is obtained.
 
 ---
 

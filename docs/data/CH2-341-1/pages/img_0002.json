@@ -1,0 +1,74 @@
+{
+  "volume": "CH2-341-1",
+  "slug": "img_0002",
+  "image_number": 2,
+  "title": "CH2/341/1 — Image 2 (folios 1–2), 3 November 1641",
+  "folios_ref": [
+    1,
+    2
+  ],
+  "year": 1641,
+  "sitting_date": "1641-11-03",
+  "languages": [
+    "scots"
+  ],
+  "status": "draft-needs-review",
+  "confidence": {
+    "folio_1": "high",
+    "folio_2": "medium"
+  },
+  "people": [
+    "John Levingston",
+    "Mr Gilbert",
+    "John McCloy of Lochans",
+    "John McKim",
+    "John McDowall of Lochans",
+    "laird of French, younger"
+  ],
+  "places": [
+    "Stranraer",
+    "Glenluce",
+    "Inch",
+    "Stoneykirk",
+    "Leswalt",
+    "Kirkcolm",
+    "Portpatrick",
+    "Kirkmaiden",
+    "Lochans"
+  ],
+  "money": [
+    "100 merks",
+    "boll of meal",
+    "annualrent"
+  ],
+  "topics": [
+    "presbytery-constitution",
+    "witness-deposition",
+    "loan",
+    "annualrent/usury"
+  ],
+  "transcriber": "claude-opus-4-8",
+  "image": {
+    "available": false,
+    "href": null,
+    "local_path": "data/CH2-341-1/images/img_0002.jpg",
+    "source_url": "https://www.scotlandspeople.gov.uk/virtual-volumes/volume-images/volume_data-CH2-341-1/GAZ00156?image_number=2"
+  },
+  "folios": [
+    {
+      "label": "Folio 1 (left page) — Register heading & membership",
+      "confidence": "high",
+      "intro": "",
+      "diplomatic": "Register of the presbiterie\nof Stranrawer beginning at\nthe 3 of November 1641\n\nThe members of the presbiterie are th[e]se:\n\nMinister at Glenluce      & the Ruling Elder therof\nMinister [at] Insh        & Ruling Elder therof\nMinister at Stanikirk     & Ruling Elder therof\nMinister at Stranrawer    & Ruling Elder therof\nMinister at Leswalt       & Ruling Elder therof\nMinister at Kirkcome      & Ruling Elder therof\nMinister at Portpatrike   & Ruling Elder therof\nMinister at Kirkmaden     & Ruling Elder therof",
+      "modern": "Register of the Presbytery of Stranraer, beginning 3 November 1641. The members\nof the presbytery are these: the Minister at Glenluce and its Ruling Elder; the\nMinister at Inch and its Ruling Elder; the Minister at Stoneykirk and its Ruling\nElder; the Minister at Stranraer and its Ruling Elder; the Minister at Leswalt\nand its Ruling Elder; the Minister at Kirkcolm and its Ruling Elder; the Minister\nat Portpatrick and its Ruling Elder; the Minister at Kirkmaiden and its Ruling Elder.\n\n---"
+    },
+    {
+      "label": "Folio 2 (right page) — First sitting; a witness deposition",
+      "confidence": "medium",
+      "intro": "",
+      "diplomatic": "                    2                    [②]\n    Presbiterie holden at Stranrawer on\n    wonsday the third of Novemb[er] 1641\n\nMr John Levingston wis chosen clerke\n\nThe laird of French younger [being] a [pairtie(?)]\nwitnesses summoned & interrogat[ed] to them\nThe witnesses called, compeared John M'Cloy\n[elder(?)] of Lochans & John McHum[?], to be re-examined\nwho befor had been sworne in Mr Gilbert[s] presens\n\nJohn M'dowal of Lochans Interrogat be [the]\n[that made if(?)] sure his flat[?] deposition he\n[had(?)] been suborned by ather [either] of the [parties] answer[ed no]\nInterrogat whither about 28 or 29 [merks he]\nborrow[ed] from Mr Gilbert [upon] a [100(?)] merk[s ...]\n[weyed(?)] that he [borrowed(?)] a two merks from him\n& had it about 9 yeirs Interrogat what he\npayed to Mr Gilbert the annual of it Answ[ere]d\nbegouth [= began] with money & payed him so mikle [= much] the\nyeir Interrogat if Mr Gilbert craved [the] money\nfrom him & would not let him keep it except he\npayed him mikle the annual[rent] [straightway(?)] he craved\nit not but [I] had it in my option Interrogat\nif he keeped the money & payed alwayes a boll [of]\nmeal for £ 100 merks by yeir til [Balingels(?)]\nmanage in [the] yeir 1620 he did keep the money\ntil that tyme & payed a boll of meall for the two\n[merks] til then Interrogat if in the yeirs 1621\n& 1623 he payed him the boll of meall for the\nmerks Answer yes I did Interrogat if he\n[was(?)] cheapest[?] in these yeirs [what(?)] the\n[rest(?)] Answers [I] do not [remember(?)]\n                          [torn / illegible foot]",
+      "modern": "The presbytery met at Stranraer on Wednesday 3 November 1641. Mr John Livingston\nwas chosen clerk. In a matter involving the younger laird of French, witnesses were\nsummoned and questioned. The witnesses called — John McCloy [elder?] of Lochans and\nJohn McKim[?] — appeared to be re-examined, having previously been sworn in the\npresence of Mr Gilbert.\n\nJohn McDowall of Lochans, being questioned, [affirmed] his earlier deposition and\n[denied] that he had been suborned (coached) by either party. Asked whether he had\nborrowed about 28 or 29 merks — [or rather] two merks upon a 100-merk [bond?] — from\nMr Gilbert, and had held it about 9 years; asked what annualrent (interest) he paid\nMr Gilbert, he answered that he began by paying in money, so much per year. Asked\nwhether Mr Gilbert demanded the money back and would not let him keep it unless he\npaid the yearly annualrent, he said Gilbert did not press it but left it at his\noption. Asked whether, if he kept the money, he always paid a boll of meal per £100\nmerks yearly [to Balingel's(?) management], in the year 1620 he did keep the money\nuntil that time and paid a boll of meal for the two [merks] until then. Asked whether\nin the years 1621 and 1623 he paid him a boll of meal for the merks, he answered\n\"Yes, I did.\" Asked whether [meal] was cheapest in those years [etc.], he answered he\ndoes not remember [remainder torn/illegible]."
+    }
+  ],
+  "notes": "- **Document structure:** Folio 1 is the register's title page and the roll of the\n  eight constituent parishes of Stranraer Presbytery. Folio 2 opens the minutes proper:\n  the first sederunt (3 Nov 1641) and election of the clerk, then immediately a witness\n  examination — the presbytery acting as a court taking depositions.\n- **Subject:** a dispute over a loan and its **annualrent** (interest), paid partly in a\n  **boll of meal** — a common way to disguise interest in an era when the kirk policed\n  usury. Money is in **merks Scots** (1 merk = 13s 4d).\n- **Palaeography applied:** `wis` = was; `wonsday` = Wednesday; `begouth` = began (Scots);\n  `mikle` = much; `boll` = grain measure; `annual` = annualrent; `Interrogat` = questioned;\n  `compeared` = appeared in court; `wt`/superscript expanded. Names show heavy spelling\n  variation (`M'Cloy`, `M'dowal`).\n- **Uncertainties for human review (Dad):**\n  1. `Mr Gilbert` — surname or forename? Likely a local creditor; needs cross-checking\n     against later pages.\n  2. `John McHum` — could be McKim / McIlHome / McKie. The MacCulloch case (folios\n     3–14) may clarify the cast.\n  3. `Balingels` / `flat deposition` / `cheapest` — low-confidence readings.\n  4. The numbers (28/29 merks vs \"two merks upon 100 merks\", years 1620/1621/1623)\n     should be re-read at higher resolution.\n- **Not yet the MacCulloch case:** this deposition is about McDowall/McCloy of Lochans and\n  Mr Gilbert. James & Alexander MacCulloch of Inshanks/Mool (Dad's focus) appear on the\n  following folios — worth prioritising images 3–8 next."
+}

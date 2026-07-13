@@ -1,0 +1,478 @@
+/* Stranraer Presbytery transcription archive — front-end.
+   Zero dependencies. Fetches the JSON emitted by scripts/build_site.py and
+   renders (a) the overview / wiki index and (b) the side-by-side page viewer.
+   Served as static files; needs http:// (fetch), so run a local server for
+   local review — see README. */
+
+'use strict';
+
+/* ------------------------------------------------------------------ utils */
+
+const $ = (sel, root = document) => root.querySelector(sel);
+const el = (tag, attrs = {}, ...kids) => {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null) continue;
+    if (k === 'class') node.className = v;
+    else if (k === 'html') node.innerHTML = v;
+    else if (k.startsWith('on') && typeof v === 'function') node.addEventListener(k.slice(2), v);
+    else node.setAttribute(k, v);
+  }
+  for (const kid of kids.flat()) {
+    if (kid == null) continue;
+    node.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+  }
+  return node;
+};
+
+const esc = (s) => String(s == null ? '' : s)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+async function getJSON(path) {
+  const res = await fetch(path, { cache: 'no-cache' });
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText} — ${path}`);
+  return res.json();
+}
+
+const qs = (k) => new URLSearchParams(location.search).get(k);
+
+function slugNumber(slug) {
+  const m = /(\d+)/.exec(slug || '');
+  return m ? parseInt(m[1], 10) : null;
+}
+
+/* Highlight editorial marks in diplomatic text: [expansion], [?], [illeg.]. */
+function markEditorial(text) {
+  return esc(text).replace(/\[[^\]]*\]/g, (m) => `<span class="ed">${m}</span>`);
+}
+
+/* Confidence can be a scalar ("high") or a per-folio object; summarise it. */
+function confSummary(conf) {
+  if (!conf) return null;
+  if (typeof conf === 'string') return conf;
+  const vals = Object.values(conf).map((v) => String(v).split('#')[0].trim()).filter(Boolean);
+  const rank = { high: 3, medium: 2, low: 1 };
+  vals.sort((a, b) => (rank[a] || 0) - (rank[b] || 0));
+  return vals[0] || null; // worst (most cautious) confidence
+}
+
+function confBadge(conf) {
+  const c = confSummary(conf);
+  if (!c) return null;
+  const key = c.toLowerCase();
+  return el('span', { class: `badge conf-${key}` }, `conf: ${c}`);
+}
+
+function statusBadge(status) {
+  if (!status) return null;
+  const cls = `badge status-${String(status).toLowerCase().replace(/[^a-z]+/g, '-')}`;
+  return el('span', { class: cls }, status.replace(/-/g, ' '));
+}
+
+/* Tiny markdown renderer — enough for the Notes blocks (bold, code, links,
+   headings, nested-ish bullet + numbered lists, paragraphs). Not general. */
+function renderMarkdown(md) {
+  if (!md) return '';
+  const inline = (s) => esc(s)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+  const lines = md.replace(/\r\n/g, '\n').split('\n');
+  let html = '';
+  let list = null;       // 'ul' | 'ol' | null
+  let para = [];
+  const flushPara = () => { if (para.length) { html += `<p>${inline(para.join(' '))}</p>`; para = []; } };
+  const closeList = () => { if (list) { html += `</${list}>`; list = null; } };
+
+  for (const raw of lines) {
+    const line = raw.replace(/\s+$/, '');
+    if (!line.trim()) { flushPara(); closeList(); continue; }
+
+    const h = /^(#{1,4})\s+(.*)$/.exec(line);
+    if (h) { flushPara(); closeList(); html += `<h3>${inline(h[2])}</h3>`; continue; }
+
+    const ol = /^\s*\d+\.\s+(.*)$/.exec(line);
+    const ul = /^\s*[-*]\s+(.*)$/.exec(line);
+    if (ol || ul) {
+      flushPara();
+      const want = ol ? 'ol' : 'ul';
+      if (list !== want) { closeList(); html += `<${want}>`; list = want; }
+      html += `<li>${inline((ol || ul)[1])}</li>`;
+      continue;
+    }
+    // continuation line inside a list item → append to previous <li>
+    if (list && /^\s{2,}\S/.test(raw)) {
+      html = html.replace(/<\/li>$/, ' ' + inline(line.trim()) + '</li>');
+      continue;
+    }
+    para.push(line.trim());
+  }
+  flushPara(); closeList();
+  return html;
+}
+
+/* ---------------------------------------------------------------- overview */
+
+async function initHome() {
+  const root = $('#home');
+  try {
+    const { volumes } = await getJSON('data/volumes.json');
+    if (!volumes || !volumes.length) {
+      root.replaceChildren(el('p', { class: 'empty' }, 'No volumes built yet. Run scripts/build_site.py.'));
+      return;
+    }
+    // Primary volume drives the deep sections; others just get a card.
+    const primary = volumes[0];
+    const index = await getJSON(`data/${primary.id}/index.json`);
+
+    root.replaceChildren(
+      renderHero(primary),
+      renderCopyrightCallout(),
+      renderVolumeCards(volumes),
+      renderContents(index),
+      renderEntityIndex('People', index.people, 'person'),
+      renderEntityIndex('Places', index.places, 'place'),
+      renderEntityIndex('Topics', index.topics, 'topic'),
+      renderFooter(),
+    );
+  } catch (err) {
+    root.replaceChildren(el('div', { class: 'callout' },
+      el('b', {}, 'Could not load site data. '),
+      'Did you run ', el('code', {}, 'python scripts/build_site.py'),
+      ' and open this over http (not file://)? ', el('br'), err.message));
+  }
+}
+
+function renderHero(v) {
+  return el('div', { class: 'hero' },
+    el('div', { class: 'eyebrow' }, 'ScotlandsPeople Virtual Volume · ' + (v.reference || '')),
+    el('h1', {}, v.title || v.id),
+    el('p', { class: 'sub' },
+      'A working archive of transcriptions, translations, and — as the corpus grows — a ' +
+      'cross-linked wiki of the people, places, and events of the ' +
+      (v.place || 'Rhins of Galloway') + '. Each page pairs the original manuscript ' +
+      'opening with a diplomatic transcription and a modern-English rendering.'),
+  );
+}
+
+function renderCopyrightCallout() {
+  return el('div', { class: 'callout', style: 'margin-bottom:28px' },
+    el('b', {}, 'About the images. '),
+    'The manuscript images are © National Records of Scotland (Crown copyright) and are ' +
+    'not republished here. Each page links back to the original on ScotlandsPeople; the ' +
+    'transcriptions and translations are the project’s own work.');
+}
+
+function renderVolumeCards(volumes) {
+  return el('div', { class: 'grid cols-2', style: 'margin-bottom:8px' },
+    ...volumes.map((v) => {
+      const done = v.transcribed_count || 0;
+      const total = v.total_images || 0;
+      const pct = total ? Math.round((done / total) * 100) : 0;
+      return el('a', { class: 'card volume-card', href: `viewer.html?vol=${encodeURIComponent(v.id)}` },
+        el('h2', {}, v.title || v.id),
+        el('div', { class: 'meta-line' }, [v.reference, v.period, v.place].filter(Boolean).join(' · ')),
+        v.focus_case ? el('div', { class: 'kv' }, el('span', {}, el('b', {}, 'Focus: '), v.focus_case)) : null,
+        el('div', { class: 'progress' },
+          el('div', { class: 'progress-bar' }, el('span', { style: `width:${pct}%` })),
+          el('div', { class: 'progress-label' }, `${done} of ${total} images transcribed · ${pct}%`)),
+      );
+    }));
+}
+
+function renderContents(index) {
+  const sec = el('div', { class: 'section' },
+    el('h2', {}, 'Contents', el('span', { class: 'count' }, `${index.pages.length} transcribed`)),
+    el('p', { class: 'hint' }, 'Every transcribed opening, grouped by the year its minutes begin. Click to open the side-by-side viewer.'));
+
+  if (!index.pages.length) { sec.append(el('p', { class: 'empty' }, 'Nothing transcribed yet.')); return sec; }
+
+  // Group pages by year using the volume's year_sections boundaries.
+  const groups = groupByYear(index.pages, index.year_sections);
+  for (const g of groups) {
+    const list = el('ul', { class: 'page-list' });
+    for (const p of g.pages) list.append(pageRow(index.id, p));
+    sec.append(el('div', { class: 'year-group' },
+      el('h3', {}, g.year != null ? String(g.year) : 'Undated'),
+      list));
+  }
+  return sec;
+}
+
+function groupByYear(pages, yearSections) {
+  // Prefer each page's own `year`; fall back to year_sections boundaries.
+  const boundaries = Object.entries(yearSections || {})
+    .map(([y, n]) => ({ year: parseInt(y, 10), start: n }))
+    .sort((a, b) => a.start - b.start);
+  const yearFor = (p) => {
+    if (p.year != null) return p.year;
+    const n = p.image_number;
+    let y = null;
+    for (const b of boundaries) if (n >= b.start) y = b.year;
+    return y;
+  };
+  const map = new Map();
+  for (const p of pages) {
+    const y = yearFor(p);
+    if (!map.has(y)) map.set(y, []);
+    map.get(y).push(p);
+  }
+  return [...map.entries()]
+    .sort((a, b) => (a[0] ?? 1e9) - (b[0] ?? 1e9))
+    .map(([year, ps]) => ({ year, pages: ps.sort((a, b) => (a.image_number || 0) - (b.image_number || 0)) }));
+}
+
+function pageRow(volId, p) {
+  const foliosTxt = Array.isArray(p.folios_ref) ? `folios ${p.folios_ref.join('–')}` : '';
+  const sub = [foliosTxt, p.sitting_date].filter(Boolean).join(' · ');
+  return el('a', { class: 'page-row', href: `viewer.html?vol=${encodeURIComponent(volId)}&img=${encodeURIComponent(p.slug)}` },
+    el('span', { class: 'imgno' }, `#${p.image_number ?? '?'}`),
+    el('span', { class: 'pt' },
+      el('span', { class: 't' }, p.title || p.slug), el('br'),
+      sub ? el('span', { class: 's' }, sub) : null),
+    el('span', { class: 'side' },
+      confBadge(p.confidence) || '',
+      statusBadge(p.status) || '',
+      p.image_available ? el('span', { class: 'badge plain' }, 'image') : ''),
+  );
+}
+
+function renderEntityIndex(title, items, kind) {
+  const sec = el('div', { class: 'section' },
+    el('h2', {}, title, el('span', { class: 'count' }, items && items.length ? `${items.length} distinct` : '')),
+    el('p', { class: 'hint' },
+      kind === 'topic'
+        ? 'Recurring themes across the minutes.'
+        : `Named ${title.toLowerCase()} seen so far. Dedicated cross-linked pages arrive with Stage-3 entity extraction.`));
+  if (!items || !items.length) { sec.append(el('p', { class: 'empty' }, 'None yet.')); return sec; }
+  const chips = el('div', { class: 'chips' });
+  for (const it of items) {
+    chips.append(el('span', { class: kind === 'topic' ? 'chip topic' : 'chip' },
+      cleanEntity(it.name),
+      it.count > 1 ? el('span', { class: 'n' }, it.count) : null));
+  }
+  sec.append(chips);
+  return sec;
+}
+
+/* Front-matter people sometimes carry an inline "# comment"; drop it for display. */
+function cleanEntity(name) {
+  return String(name).split('#')[0].replace(/\s+/g, ' ').trim();
+}
+
+function renderFooter() {
+  return el('div', { class: 'footer' },
+    'Transcriptions & translations by Claude Opus vision, under human review · ',
+    'Manuscript images © National Records of Scotland (Crown copyright), shown via ScotlandsPeople · ',
+    'Generated by ', el('code', {}, 'scripts/build_site.py'), '.');
+}
+
+/* ------------------------------------------------------------------ viewer */
+
+let VIEWER = { volId: null, index: null, order: [], pos: 0, mode: 'both' };
+
+async function initViewer() {
+  const root = $('#viewer');
+  const volId = qs('vol');
+  if (!volId) {
+    // No volume specified — send to the first available volume.
+    try {
+      const { volumes } = await getJSON('data/volumes.json');
+      if (volumes && volumes.length) { location.replace(`viewer.html?vol=${encodeURIComponent(volumes[0].id)}`); return; }
+    } catch { /* fall through to error */ }
+    root.replaceChildren(el('div', { class: 'callout' }, 'No volume specified.'));
+    return;
+  }
+  try {
+    const index = await getJSON(`data/${volId}/index.json`);
+    VIEWER.volId = volId;
+    VIEWER.index = index;
+    VIEWER.order = index.pages.slice().sort((a, b) => (a.image_number || 0) - (b.image_number || 0));
+    if (!VIEWER.order.length) {
+      root.replaceChildren(el('div', { class: 'callout' }, 'This volume has no transcribed pages yet.'));
+      return;
+    }
+    const wanted = qs('img');
+    VIEWER.pos = Math.max(0, VIEWER.order.findIndex((p) => p.slug === wanted));
+    if (VIEWER.pos < 0) VIEWER.pos = 0;
+    $('#brand-title').textContent = index.title || volId;
+    $('#brand-ref').textContent = index.reference || '';
+    document.addEventListener('keydown', onKey);
+    await loadCurrent();
+  } catch (err) {
+    root.replaceChildren(el('div', { class: 'callout' },
+      el('b', {}, 'Could not load the viewer. '),
+      'Run ', el('code', {}, 'python scripts/build_site.py'), ' and open over http. ',
+      el('br'), esc(err.message)));
+  }
+}
+
+function onKey(e) {
+  if (e.target && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
+  if (e.key === 'ArrowLeft') go(-1);
+  else if (e.key === 'ArrowRight') go(1);
+}
+
+function go(delta) {
+  const next = VIEWER.pos + delta;
+  if (next < 0 || next >= VIEWER.order.length) return;
+  VIEWER.pos = next;
+  loadCurrent();
+}
+
+async function loadCurrent() {
+  const meta = VIEWER.order[VIEWER.pos];
+  const page = await getJSON(`data/${VIEWER.volId}/pages/${meta.slug}.json`);
+  // Reflect the current page in the URL without reloading.
+  history.replaceState(null, '', `viewer.html?vol=${encodeURIComponent(VIEWER.volId)}&img=${encodeURIComponent(meta.slug)}`);
+  renderViewer(page);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function renderViewer(page) {
+  const root = $('#viewer');
+  const hasPrev = VIEWER.pos > 0;
+  const hasNext = VIEWER.pos < VIEWER.order.length - 1;
+
+  const select = el('select', { class: 'page-select', onchange: (e) => { VIEWER.pos = +e.target.value; loadCurrent(); } });
+  VIEWER.order.forEach((p, i) => select.append(
+    el('option', { value: i, selected: i === VIEWER.pos ? 'selected' : null },
+      `#${p.image_number ?? '?'} — ${p.title || p.slug}`)));
+
+  const head = el('div', { class: 'viewer-head' },
+    el('h1', {}, page.title || page.slug),
+    el('div', { class: 'pager' },
+      el('button', { class: 'btn', disabled: hasPrev ? null : 'disabled', onclick: () => go(-1) }, '← Prev'),
+      select,
+      el('button', { class: 'btn', disabled: hasNext ? null : 'disabled', onclick: () => go(1) }, 'Next →')));
+
+  const meta = el('div', { class: 'meta-strip' },
+    metaItem('Image', `#${page.image_number ?? '?'}`),
+    Array.isArray(page.folios_ref) ? metaItem('Folios', page.folios_ref.join('–')) : null,
+    page.sitting_date ? metaItem('Sitting', page.sitting_date) : null,
+    page.year ? metaItem('Year', page.year) : null,
+    page.languages ? metaItem('Language', page.languages.join(', ')) : null,
+    el('span', { class: 'mi' }, statusBadge(page.status) || ''),
+    el('span', { class: 'mi' }, confBadge(page.confidence) || ''));
+
+  const split = el('div', { class: 'split' },
+    renderImagePane(page),
+    renderTxPane(page));
+
+  const notes = page.notes
+    ? el('div', { class: 'notes' }, el('details', { class: 'notes-details', open: 'open' },
+        el('summary', {}, 'Notes & context'),
+        el('div', { class: 'prose', html: renderMarkdown(page.notes) })))
+    : null;
+
+  const entities = renderPageEntities(page);
+
+  root.replaceChildren(head, meta, split, notes || document.createComment('no notes'), entities || document.createComment('no entities'), renderFooter());
+  ensureLightbox();
+}
+
+function metaItem(label, value) {
+  return el('span', { class: 'mi' }, el('b', {}, label + ': '), String(value));
+}
+
+function renderImagePane(page) {
+  const img = page.image || {};
+  let body;
+  if (img.available && img.href) {
+    body = el('div', { class: 'image-frame' },
+      el('img', { src: img.href, alt: `Manuscript image ${page.image_number}`, loading: 'lazy',
+        onclick: (e) => openLightbox(e.target.src) }));
+  } else {
+    body = el('div', { class: 'image-frame' }, el('div', { class: 'image-missing' },
+      el('div', { class: 'lock' }, '📖'),
+      el('div', {}, el('b', {}, 'Open the original manuscript')),
+      el('p', {}, `Image ${page.image_number ?? ''} of the volume on ScotlandsPeople. It opens in a new tab — keep it beside this page to read the two side by side. (Sign in to view; free to view once logged in.)`),
+      img.source_url
+        ? el('a', { class: 'btn primary', href: img.source_url, target: '_blank', rel: 'noopener' }, 'Open on ScotlandsPeople ↗')
+        : el('span', { class: 'empty' }, 'source link unavailable')));
+  }
+  return el('div', { class: 'pane image-pane sticky' },
+    el('div', { class: 'pane-head' }, el('span', {}, 'Manuscript'),
+      img.available ? el('span', {}, 'click to zoom') : el('span', {}, 'opens in a new tab')),
+    el('div', { class: 'pane-body' }, body));
+}
+
+function renderTxPane(page) {
+  const seg = el('div', { class: 'segmented' },
+    modeBtn('Diplomatic', 'diplomatic'),
+    modeBtn('Modern', 'modern'),
+    modeBtn('Both', 'both'));
+
+  const blocks = el('div', {});
+  for (const f of page.folios || []) blocks.append(renderFolio(f));
+  if (!(page.folios || []).length) blocks.append(el('p', { class: 'empty' }, 'No transcription parsed for this page.'));
+
+  return el('div', { class: 'pane' },
+    el('div', { class: 'pane-head' }, el('span', {}, 'Transcription & translation'), seg),
+    el('div', { class: 'pane-body' }, blocks));
+}
+
+function modeBtn(label, mode) {
+  return el('button', { class: VIEWER.mode === mode ? 'active' : '', onclick: () => setMode(mode) }, label);
+}
+
+function setMode(mode) {
+  VIEWER.mode = mode;
+  // Re-render just the current page to apply the mode.
+  const meta = VIEWER.order[VIEWER.pos];
+  getJSON(`data/${VIEWER.volId}/pages/${meta.slug}.json`).then(renderViewer);
+}
+
+function renderFolio(f) {
+  const showDip = VIEWER.mode !== 'modern';
+  const showMod = VIEWER.mode !== 'diplomatic';
+  return el('div', { class: 'folio-block' },
+    el('h3', { class: 'folio-title' }, f.label || 'Folio', confBadge(f.confidence) || ''),
+    f.intro ? el('div', { class: 'folio-intro' }, f.intro) : null,
+    showDip && f.diplomatic ? el('div', {},
+      el('div', { class: 'tx-label' }, 'Diplomatic'),
+      el('div', { class: 'diplomatic', html: markEditorial(f.diplomatic) })) : null,
+    showMod && f.modern ? el('div', {},
+      el('div', { class: 'tx-label' }, 'Modern English'),
+      el('div', { class: 'modern', html: renderMarkdown(f.modern) })) : null,
+  );
+}
+
+function renderPageEntities(page) {
+  const rows = [];
+  const add = (label, items) => {
+    if (!items || !items.length) return;
+    rows.push(el('div', {},
+      el('div', { class: 'lbl' }, label),
+      el('div', { class: 'chips' }, ...items.map((it) =>
+        el('span', { class: label === 'Topics' ? 'chip topic' : 'chip' }, cleanEntity(it))))));
+  };
+  add('People', page.people);
+  add('Places', page.places);
+  add('Money', page.money);
+  add('Topics', page.topics);
+  if (!rows.length) return null;
+  return el('div', { class: 'entity-row' }, ...rows);
+}
+
+/* lightbox */
+function ensureLightbox() {
+  if ($('#lightbox')) return;
+  const lb = el('div', { class: 'lightbox', id: 'lightbox', onclick: () => lb.classList.remove('open') },
+    el('img', { src: '', alt: 'manuscript image, enlarged' }));
+  document.body.append(lb);
+}
+function openLightbox(src) {
+  const lb = $('#lightbox');
+  if (!lb) return;
+  $('img', lb).src = src;
+  lb.classList.add('open');
+}
+
+/* --------------------------------------------------------------- dispatch */
+
+document.addEventListener('DOMContentLoaded', () => {
+  if ($('#home')) initHome();
+  else if ($('#viewer')) initViewer();
+});

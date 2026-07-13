@@ -1,0 +1,77 @@
+{
+  "volume": "CH2-341-1",
+  "slug": "img_0003",
+  "image_number": 3,
+  "title": "CH2/341/1 — Image 3 (folios 2v–3), Sept 1642",
+  "folios_ref": [
+    "2v",
+    3
+  ],
+  "year": 1642,
+  "sitting_date": "1642-09-21",
+  "languages": [
+    "scots"
+  ],
+  "status": "draft-needs-review",
+  "confidence": {
+    "left": "low",
+    "right": "low"
+  },
+  "people": [
+    "John McDowall of Lochans",
+    "Peter McCulloch",
+    "Mr Alexander Turnbull",
+    "Mr John Livingston",
+    "Patrick Wilson",
+    "John Wilson",
+    "McDowell (younger, of Galloway?)",
+    "John McKinna",
+    "George Neilson",
+    "James Blair",
+    "Marion Tolber[?] / Conochie[?]"
+  ],
+  "places": [
+    "Stranraer",
+    "Edinburgh",
+    "Lochans",
+    "parish (Stoneykirk?)"
+  ],
+  "money": [
+    "20 merks",
+    "500 merks",
+    "three half pecks of corne",
+    "half a peck"
+  ],
+  "topics": [
+    "witness-deposition",
+    "accusations-of-oppression",
+    "false-testament",
+    "tumult-of-Stranraer",
+    "referral-to-Kirk-commissioners",
+    "parish-visitation"
+  ],
+  "transcriber": "claude-opus-4-8 (in-session)",
+  "image": {
+    "available": false,
+    "href": null,
+    "local_path": "data/CH2-341-1/images/img_0003.jpg",
+    "source_url": "https://www.scotlandspeople.gov.uk/virtual-volumes/volume-images/volume_data-CH2-341-1/GAZ00156?image_number=3"
+  },
+  "folios": [
+    {
+      "label": "Folio 2v (left page, marked \"2a\")",
+      "confidence": "low",
+      "intro": "Continues the deposition from image 2, then a numbered list of accusations\n(\"the accusation as follows\").",
+      "diplomatic": "[continuation of the deposition]\n...Martimes ye boll w[orth?] iiij s & are lambes it were\n20 merks I payed ay the annuall bot far handl[it]\nI had one yeir for nothing bot do not remember\nwhat yeir it wes the money wes borrowed the sec-\nond or third yeir after [being] tak[en] from my Lord\nOchiltrie[?] which beares date ye yeir 1611  Interrogat\nwhither at his young daughters baptisme he or his wyfe\ngave him diess[?] as annuall [say] or not  Answers\nI did answer befor I war[?] my wyfe gave none\n\n[a new hand / section:]\n[Alexr?] gave in a paper of some particular instances of\nthe accusation as follows ————\n1. oppression in taking by the strong hand\n   [the] most part of the parish half a peck of [meal?]\n   of the [quarter?] lands & in anno 1633 they\n   [broke?] up or caused break up patrik wilsons barne[-]\n   doors & forced them give him thrie half peckis of corne\n   witness patrik wilson, [John] wilson & [Alexr?] McDowell\n2. [item] perjurie [in] accusing him of perjurie in swear[ing]\n   ye [name?] ofces[?]  I granted[?] from John McKinna to be\n   his own goods bought & sold without redress[ion] to\n   him or any in his name  Witness the Sherif of\n   Galloway younger [George?] neilson, John McKinna\n   [Wilk?] Barron & others  ————  Anent oppression &\n3. the false testament writing he by the strong hand\n   raised [George?] Charles & his wyfe [aigne?] & [quyt?] him\n   ane band of 500 merks for one  Also they knew of\n   the false writing of peter McCullochs testament the tyme\n   of her decease  ————  In defence william campbel\n   examined on ye [estait?] ground of the accusatio[n]\n   given in [these]  Bishop [Kelts?]  Sic subscribitur\n   [signature illegible]",
+      "modern": "The deponent (John McDowall of Lochans) continues: rents were paid at Martinmas\n— a boll worth 4 shillings and some lambs — the sum being about 20 merks; he\nalways paid the annualrent (interest) but does not recall which year the money\nwas first borrowed (the second or third year after a \"tack\"/lease from Lord\nOchiltree[?], dated 1611). Asked whether, at his young daughter's baptism, he or\nhis wife gave Mr Gilbert gifts in lieu of interest, he denies it.\n\nThen **Alexander [MacCulloch?] submitted a written paper of specific charges**:\n(1) **oppression** — seizing by force much of the parish's grain, and in 1633\nbreaking open Patrick Wilson's barn doors and extorting corn (witnesses Patrick\nWilson, John Wilson, [Alexander] McDowell); (2) **perjury** and dealing in goods\n\"bought and sold\" improperly (witnesses include the younger Sheriff of Galloway,\nGeorge Neilson, John McKinna); (3) **falsifying a testament** — forcing a bond of\n500 merks, and knowledge of **the false writing of Peter McCulloch's testament**\naround the time of the deceased's death. In defence, William Campbell was examined."
+    },
+    {
+      "label": "Folio 3 (right page, marked \"3\")",
+      "confidence": "low",
+      "intro": "Presbytery procedure: referral of the dispute to the Kirk commissioners in\nEdinburgh, response to the \"tumult of Stranraer,\" and the opening of a visitation\nsederunt on 21 September 1642.",
+      "diplomatic": "...[it appeared that it was] libelled  Whereupon the presb[yterie]\n[thought] good to acquaint the Commissioners of the Kirk\n[that] p[rese]ntlie  That after their advise the[y] might [proceed]\nThe whilk day Mr Alexr Turnbull was desyred\nto goe to Edinbr[ugh] for acquainting the Commissioners\nof the Kirk [there] w[ith] the thrie papers gi[v]en in be\nthe elders of Stranraer  and w[ith] the p[rese]nt tumult\nand to seek their advise anent the [samen]\nThe whilk day it was thought good that every min-\nister and Session should mak inquyrie who wer pre-\n[sent] upon bak [syd] at that tumult of Stranraer  and\nto report their [cariages] against the next day\nals [meikle] as they could learne thereof ————\nMarion [Tolber?] is ordained to be summond pro 2do\nto compeir befor the presb[yterie] at Stranrawer the 21\nof September ————\nour next meeting is to be at Stranrawer for\nvisitation upon the 21 of September 1642\n\n        Presb[yterie] at Stranrawer for visitatio[un] the\n        21 of September 1642\nThe whilk day Mr John Livingston p[rea]ched upon\n[his ordinar] the 19 of Luk[e] and Last [libel?] b[eing] hereof and\nwas approven ————\nThe whilk day the elders of the p[arish] being interrog[at]\n[what] they had to say concerning their minister[']s\ndoctrine, discipline, lyfe and conversation  they all\n[answered] they were weill satisfied w[ith] him in all\n[things]  And he being interrogat what he had\nto say concerning the elders  he had nothing\nto say against them ————\n[James] Blair [confessed?]  Marion [Conochie?] absent\n[and] declared that scho should compeir [again?]  Mr [...]\n        Interrog[at] ...",
+      "modern": "The presbytery resolved to consult the Commissioners of the Kirk in Edinburgh:\n**Mr Alexander Turnbull** was appointed to go to Edinburgh with the three papers\nsubmitted by the Stranraer elders and to report \"the present tumult,\" seeking the\ncommissioners' advice. Every minister and session was to inquire who had been\npresent at the tumult of Stranraer and report by the next meeting. **Marion\n[Tolber/Pollock?]** was ordered summoned a second time to appear on 21 September.\nThe next meeting — a visitation — was set for Stranraer, 21 September 1642.\n\nA new sederunt then opens: **Presbytery at Stranraer for visitation, 21 September\n1642.** Mr John Livingston preached (on Luke 19); the parish elders, questioned\nabout their minister's doctrine, discipline, life and conversation, declared\nthemselves well satisfied; the minister had no complaint against the elders.\nJames Blair … ; Marion [Conochie?] was absent and was to appear again."
+    }
+  ],
+  "notes": "- **This is core McCulloch-case material** (Dad's focus): the numbered charges name\n  **the false writing of Peter McCulloch's testament**, oppression/extortion of\n  grain, and a forced 500-merk bond. The deponent is McDowall of Lochans; the\n  accused (from image 2's heading) is connected to Mr Gilbert / the MacCullochs —\n  the exact identities need cross-checking against images 4–8.\n- **\"Tumult of Stranraer\"** — a public disturbance the presbytery escalates to the\n  Edinburgh commissioners; recurs on later pages, worth tracking as an event.\n- **Palaeography:** `whilk` = which; `desyred` = requested; `anent` = concerning;\n  `pro 2do` = for the second time (Latin); `Sic subscribitur` = \"thus it is\n  subscribed\" (i.e. signed); `meikle` = much; `scho` = she; money in **merks**,\n  grain in **bolls / pecks**.\n- **Lowest-confidence readings for the reviewer (Dad):**\n  1. `Ochiltrie` (the \"Lord\" whose 1611 tack is referenced) — verify.\n  2. The surname behind charge (2)/(3) — \"Charles\", \"McKinna\", \"Neilson\", \"Barron\"\n     spellings are shaky.\n  3. `Marion Tolber` vs `Pollock` vs `Conochie` — possibly two different women.\n  4. `Bishop Kelts` and the subscriber's name — illegible; re-read at higher zoom.\n  5. Whole left page is faded/torn — treat every `[?]` as provisional."
+}

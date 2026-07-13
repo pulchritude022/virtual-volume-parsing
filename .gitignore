@@ -30,6 +30,13 @@ Thumbs.db
 .vscode/
 .idea/
 
+# --- Generated site data ---
+# Built by scripts/build_site.py from the transcriptions; the GitHub Pages
+# workflow (.github/workflows/deploy-pages.yml) rebuilds it on every deploy, so
+# the markdown is the single source of truth and the JSON is never committed.
+# The hand-written front-end (docs/*.html, docs/assets/, docs/.nojekyll) stays tracked.
+docs/data/
+
 # --- Work artifacts ---
 *.log
 .env

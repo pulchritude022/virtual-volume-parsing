@@ -22,10 +22,11 @@ data/<volume>/
   manifest.json               provenance for each image
   transcriptions/             Stage 1 — one markdown file per image
 secrets/                      session cookie (gitignored — never commit)
-docs/                         Stage 4/5 — static viewer + generated data (GitHub Pages root)
+docs/                         Stage 4/5 — static viewer (GitHub Pages root)
   index.html, viewer.html     overview + side-by-side reviewer
   assets/                     style.css, app.js (no build step, no framework)
-  data/                       generated JSON (built from transcriptions)
+  data/                       generated JSON (gitignored; rebuilt by CI on deploy)
+.github/workflows/            deploy-pages.yml — build + publish to Pages on push
 ```
 
 ## Quick start
@@ -62,19 +63,28 @@ site renders:
   transcription ⟷ modern-English translation, per folio, with notes and page entities.
   Toggle Diplomatic / Modern / Both; `←`/`→` arrows page through the volume.
 
-Re-run `build_site.py` after any transcription changes. It needs `http://` (for `fetch`),
-so preview via `http.server` rather than opening the files directly.
+The generated JSON (`docs/data/`) is **not committed** — it is `.gitignore`d and rebuilt by
+CI on deploy, so the transcription markdown is the single source of truth. Run `build_site.py`
+locally only to preview. It needs `http://` (for `fetch`), so preview via `http.server` rather
+than opening the files directly.
 
 **Images stay copyright-safe by construction:** they are `.gitignore`d and never embedded.
 The default build references them by relative path (they 404 on a public host, and the
-viewer shows a "View on ScotlandsPeople" placeholder). `--with-images` copies them into
-`docs/` for *local* review only — those copies remain untracked.
+viewer shows an "Open on ScotlandsPeople" link that opens the original in a new tab).
+`--with-images` copies them into `docs/` for *local* review only — those copies remain untracked.
 
-### Hosting on GitHub Pages
-The site is Pages-ready (`docs/` + `.nojekyll`). To publish the **transcriptions and
-translations** (the project's own work) while keeping the Crown-copyright images private:
-build **without** `--with-images`, commit `docs/`, and set Pages → *Deploy from a branch* →
-`/docs`. Enabling public Pages is a deliberate step — see **Ethics & copyright** below.
+### Hosting on GitHub Pages (automated)
+Live at **https://pulchritude022.github.io/virtual-volume-parsing/**. Deployment is automated by
+[`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml): on any push to `main`
+that touches the transcriptions, config, builder, or front-end, CI runs `build_site.py` and
+publishes `docs/` to Pages. **Pages source = _GitHub Actions_** (Settings → Pages).
+
+So the publishing loop for new transcriptions is just:
+```bash
+git add data/ && git commit -m "Transcribe …" && git push   # CI builds + deploys
+```
+No manual `build_site.py` run or `docs/` commit is needed to publish. Only the **transcriptions
+and translations** (the project's own work) are published; the Crown-copyright images never are.
 
 ## Ethics & copyright
 Images are © National Records of Scotland (Crown copyright), **free to view** when logged in. This

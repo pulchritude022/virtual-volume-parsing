@@ -1,0 +1,64 @@
+name: Deploy site to GitHub Pages
+
+# Rebuilds the static site (scripts/build_site.py -> docs/data/) and deploys
+# docs/ to GitHub Pages. Runs when the transcriptions, config, builder, or the
+# front-end change — so pushing new/updated transcriptions publishes them with
+# no manual build step. Manual runs: Actions tab -> this workflow -> Run.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'data/**'
+      - 'config/**'
+      - 'scripts/build_site.py'
+      - 'docs/**'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+
+# Least-privilege token that can publish Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Let a newer run supersede an in-flight one, but don't cancel a deploy midway.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install build dependency
+        run: pip install "PyYAML>=6"   # build_site.py's only third-party need
+
+      - name: Build site data (image-free / public)
+        run: python scripts/build_site.py
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

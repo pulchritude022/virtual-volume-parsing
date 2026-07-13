@@ -1,0 +1,22 @@
+# Entity alias table — Stage 3/4 wiki.
+#
+# The extractor merges names that are spelling-identical after stripping
+# editorial brackets/punctuation (scripts/build_site.py: entity_key()). Real
+# manuscript spelling variance (a name written two different ways across
+# openings) is NOT identical after that normalisation, so it would otherwise
+# fragment one person/place into two entity pages with two mention counts.
+#
+# This table forces specific known variants to merge, keyed by their
+# normalised entity_key (lowercase, punctuation-stripped). The LEFT side
+# merges into the RIGHT side (the canonical form used for the entity's
+# display name/slug). Extend this file as new splinters are noticed; no code
+# change needed.
+
+person:
+  "mr john livingston": "mr john livingstone"
+  "the earl of galloway": "earl of galloway"
+  "james ross of barneill": "james ross of balneil"
+  "james ross of barneil": "james ross of balneil"
+  "mr hugh hutcheson": "mr hew hutcheson"
+
+place: {}

@@ -37,6 +37,8 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
 CONFIG = ROOT / "config" / "volumes.yaml"
+EVENTS_CONFIG = ROOT / "config" / "events.yaml"
+ALIASES_CONFIG = ROOT / "config" / "aliases.yaml"
 DATA = ROOT / "data"
 DOCS = ROOT / "docs"
 SITE_DATA = DOCS / "data"
@@ -176,6 +178,57 @@ def image_slug_to_number(slug: str) -> int | None:
     return int(m.group(1)) if m else None
 
 
+def load_events_config() -> list[dict]:
+    if not EVENTS_CONFIG.exists():
+        return []
+    cfg = yaml.safe_load(EVENTS_CONFIG.read_text(encoding="utf-8")) or {}
+    return cfg.get("events", [])
+
+
+def load_aliases_config() -> dict:
+    if not ALIASES_CONFIG.exists():
+        return {}
+    return yaml.safe_load(ALIASES_CONFIG.read_text(encoding="utf-8")) or {}
+
+
+def compute_page_events(events_cfg: list[dict], image_number: int | None,
+                         people: list[str], topics: list[str]) -> list[str]:
+    """Deterministically classify a page into 0+ events from config/events.yaml.
+
+    No transcription file is touched: membership is derived purely from the
+    image number plus the people/topics already extracted at Stage 1, so
+    re-running the build re-classifies every page (past and future) for free.
+    """
+    if image_number is None:
+        return []
+    people_l = [p.lower() for p in people]
+    topics_l = [t.lower() for t in topics]
+    out = []
+    for ev in events_cfg:
+        rng = ev.get("image_range") or {}
+        lo, hi = rng.get("min"), rng.get("max")
+        if lo is not None and image_number < lo:
+            continue
+        if hi is not None and image_number > hi:
+            continue
+        people_any = [p.lower() for p in ev.get("people_any", [])]
+        topics_any = ev.get("topics_any", [])
+        matched = False
+        if people_any and any(pat in pk for pk in people_l for pat in people_any):
+            matched = True
+        if not matched and topics_any:
+            # Flat list -> OR semantics; list-of-lists -> AND across groups,
+            # OR within each group (see config/events.yaml for why).
+            groups = topics_any if topics_any and isinstance(topics_any[0], list) else [topics_any]
+            matched = all(
+                any(pat.lower() in tk for tk in topics_l for pat in group)
+                for group in groups
+            )
+        if matched:
+            out.append(ev["name"])
+    return out
+
+
 # --------------------------------------------------------------------------- #
 # Stage 3 — entity extraction (people / places consolidated across openings)
 # --------------------------------------------------------------------------- #
@@ -203,25 +256,51 @@ def entity_slug(key: str) -> str:
     return _NONWORD_RE.sub("-", key).strip("-") or "unknown"
 
 
-class EntityAccumulator:
-    """Collects mentions + co-occurrences for one kind (person/place)."""
+ENTITY_KINDS = ("person", "place", "event")
+RELATED_FIELD = {"person": "related_people", "place": "related_places", "event": "related_events"}
 
-    def __init__(self, kind: str):
+
+class EntityAccumulator:
+    """Collects mentions + co-occurrences for one kind (person/place/event).
+
+    Co-occurrence is tracked generically across all ENTITY_KINDS plus a
+    free-text `topics` bucket, so adding a new kind (e.g. "event") needs no
+    change here — related_person / related_place / related_event fall out
+    of the same mechanism that already produced related_people/related_places.
+    """
+
+    def __init__(self, kind: str, alias_map: dict | None = None):
         self.kind = kind
+        self.alias_map = alias_map or {}
         self.by_key: dict[str, dict] = {}
 
-    def note(self, raw_name: str, page_ref: dict) -> str | None:
+    def note(self, raw_name: str, page_ref: dict, co: dict[str, list[str]] | None = None) -> str | None:
+        """Record one mention. `co` maps other kind -> list of names on the same page."""
         key = entity_key(raw_name)
         if not key:
             return None
+        key = self.alias_map.get(key, key)
         rec = self.by_key.setdefault(
             key,
             {"key": key, "display": Counter(), "mentions": {},
-             "co_people": Counter(), "co_places": Counter(), "topics": Counter()},
+             "co": {k: Counter() for k in ENTITY_KINDS}, "topics": Counter()},
         )
         rec["display"][clean_entity(raw_name)] += 1
         rec["mentions"].setdefault(page_ref["slug"], page_ref)
+        for other_kind, names in (co or {}).items():
+            bucket = rec["co"].setdefault(other_kind, Counter())
+            for n in names:
+                if other_kind == self.kind and entity_key(n) == key:
+                    continue  # don't self-relate
+                bucket[n] += 1
         return key
+
+    def note_topics(self, key: str, topics: list[str]) -> None:
+        rec = self.by_key.get(key)
+        if rec is None:
+            return
+        for t in topics:
+            rec["topics"][t] += 1
 
     def finalize(self, slug_taken: set[str]) -> list[dict]:
         out = []
@@ -236,22 +315,65 @@ class EntityAccumulator:
                 rec["mentions"].values(),
                 key=lambda m: (m["image_number"] is None, m["image_number"] or 0),
             )
-            out.append({
+            doc = {
                 "kind": self.kind,
                 "slug": slug,
                 "name": name,
                 "variants": [v for v, _ in rec["display"].most_common()],
                 "count": len(mentions),
                 "mentions": mentions,
-                "related_people": [dict(name=k, count=c) for k, c in rec["co_people"].most_common(24)],
-                "related_places": [dict(name=k, count=c) for k, c in rec["co_places"].most_common(24)],
                 "topics": [dict(name=k, count=c) for k, c in rec["topics"].most_common(24)],
-            })
+            }
+            for k in ENTITY_KINDS:
+                doc[RELATED_FIELD[k]] = [dict(name=n, count=c) for n, c in rec["co"].get(k, Counter()).most_common(24)]
+            out.append(doc)
         out.sort(key=lambda e: (-e["count"], e["name"].lower()))
         return out
 
 
-def build_volume(vol_cfg: dict, with_images: bool) -> dict | None:
+def load_narrative(volume_id: str, kind: str, slug: str) -> str | None:
+    """Load an optional Stage-3b LLM-synthesized narrative for one entity.
+
+    data/<volume>/wiki/<kind>/<slug>.md — authored once, reviewable like a
+    transcription, and re-attached to the mechanically-extracted entity JSON
+    on every build. An optional leading `---`-delimited front-matter block is
+    stripped; everything else is passed through as markdown.
+    """
+    path = DATA / volume_id / "wiki" / kind / f"{slug}.md"
+    if not path.exists():
+        return None
+    text = path.read_text(encoding="utf-8")
+    m = FRONT_MATTER_RE.match(text)
+    return text[m.end():].strip() if m else text.strip()
+
+
+def build_glossary(volume_id: str) -> dict | None:
+    """Parse data/<volume>/glossary.md (## Term headings) into JSON, if present."""
+    path = DATA / volume_id / "glossary.md"
+    if not path.exists():
+        return None
+    text = path.read_text(encoding="utf-8")
+    _, body = split_front_matter(text)
+    title = ""
+    terms = []
+    slug_taken: set[str] = set()
+    for heading, section in _sections(body, 2):
+        if heading == "":
+            m = re.search(r"^#\s+(.*)$", section, re.MULTILINE)
+            if m:
+                title = m.group(1).strip()
+            continue
+        slug = entity_slug(entity_key(heading))
+        base, n = slug, 2
+        while slug in slug_taken:
+            slug, n = f"{base}-{n}", n + 1
+        slug_taken.add(slug)
+        terms.append({"term": heading.strip(), "slug": slug, "definition": section.strip()})
+    terms.sort(key=lambda t: t["term"].lower())
+    return {"volume": volume_id, "title": title, "terms": terms}
+
+
+def build_volume(vol_cfg: dict, with_images: bool, events_cfg: list[dict], aliases_cfg: dict) -> dict | None:
     volume_id = vol_cfg["id"]
     tdir = DATA / volume_id / "transcriptions"
     if not tdir.exists():
@@ -268,8 +390,11 @@ def build_volume(vol_cfg: dict, with_images: bool) -> dict | None:
     people = Counter()
     places = Counter()
     topics = Counter()
-    person_acc = EntityAccumulator("person")
-    place_acc = EntityAccumulator("place")
+    events = Counter()
+    person_acc = EntityAccumulator("person", aliases_cfg.get("person"))
+    place_acc = EntityAccumulator("place", aliases_cfg.get("place"))
+    event_acc = EntityAccumulator("event")
+    accs = {"person": person_acc, "place": place_acc, "event": event_acc}
     page_index: list[dict] = []
 
     md_files = sorted(tdir.glob("*.md"))
@@ -307,12 +432,15 @@ def build_volume(vol_cfg: dict, with_images: bool) -> dict | None:
         page_people = [clean_entity(n) for n in (fm.get("people") or []) if clean_entity(n)]
         page_places = [clean_entity(n) for n in (fm.get("places") or []) if clean_entity(n)]
         page_topics = [clean_entity(n) for n in (fm.get("topics") or []) if clean_entity(n)]
+        page_events = compute_page_events(events_cfg, number, page_people, page_topics)
         for name in page_people:
             people[name] += 1
         for place in page_places:
             places[place] += 1
         for topic in page_topics:
             topics[topic] += 1
+        for ev in page_events:
+            events[ev] += 1
 
         # Feed entity accumulators with a compact page reference + co-occurrences.
         page_ref = {
@@ -323,30 +451,13 @@ def build_volume(vol_cfg: dict, with_images: bool) -> dict | None:
             "sitting_date": str(fm.get("sitting_date")) if fm.get("sitting_date") else None,
             "folios_ref": fm.get("folios"),
         }
-        for name in page_people:
-            key = person_acc.note(name, page_ref)
-            if key is None:
-                continue
-            rec = person_acc.by_key[key]
-            for other in page_people:
-                if entity_key(other) != key:
-                    rec["co_people"][other] += 1
-            for pl in page_places:
-                rec["co_places"][pl] += 1
-            for tp in page_topics:
-                rec["topics"][tp] += 1
-        for place in page_places:
-            key = place_acc.note(place, page_ref)
-            if key is None:
-                continue
-            rec = place_acc.by_key[key]
-            for other in page_places:
-                if entity_key(other) != key:
-                    rec["co_places"][other] += 1
-            for pers in page_people:
-                rec["co_people"][pers] += 1
-            for tp in page_topics:
-                rec["topics"][tp] += 1
+        by_kind = {"person": page_people, "place": page_places, "event": page_events}
+        for kind, names in by_kind.items():
+            acc = accs[kind]
+            for name in names:
+                key = acc.note(name, page_ref, co=by_kind)
+                if key is not None:
+                    acc.note_topics(key, page_topics)
 
         page = {
             "volume": volume_id,
@@ -363,6 +474,7 @@ def build_volume(vol_cfg: dict, with_images: bool) -> dict | None:
             "places": fm.get("places") or [],
             "money": fm.get("money") or [],
             "topics": fm.get("topics") or [],
+            "events": page_events,
             "transcriber": fm.get("transcriber"),
             "image": {
                 "available": image_available,
@@ -395,16 +507,14 @@ def build_volume(vol_cfg: dict, with_images: bool) -> dict | None:
 
     # ---- Stage 3: finalize & write consolidated entity pages --------------- #
     slug_taken: set[str] = set()
-    persons = person_acc.finalize(slug_taken)
-    places_e = place_acc.finalize(slug_taken)
+    finalized = {kind: accs[kind].finalize(slug_taken) for kind in ENTITY_KINDS}
+
     # name(clean) -> {slug, kind} so co-occurrence links can resolve to pages.
     resolve = {}
-    for e in persons:
-        for v in e["variants"]:
-            resolve[entity_key(v)] = {"slug": e["slug"], "kind": "person"}
-    for e in places_e:
-        for v in e["variants"]:
-            resolve.setdefault(entity_key(v), {"slug": e["slug"], "kind": "place"})
+    for kind in ENTITY_KINDS:
+        for e in finalized[kind]:
+            for v in e["variants"]:
+                resolve.setdefault(entity_key(v), {"slug": e["slug"], "kind": kind})
 
     def _link(items):
         out = []
@@ -415,24 +525,34 @@ def build_volume(vol_cfg: dict, with_images: bool) -> dict | None:
         return out
 
     ent_dir = out_dir / "entities"
-    for kind, coll in (("person", persons), ("place", places_e)):
+    for kind in ENTITY_KINDS:
         kdir = ent_dir / kind
         kdir.mkdir(parents=True, exist_ok=True)
-        for e in coll:
-            doc = {**e, "volume": volume_id,
-                   "related_people": _link(e["related_people"]),
-                   "related_places": _link(e["related_places"])}
+        for e in finalized[kind]:
+            e["narrative"] = load_narrative(volume_id, kind, e["slug"])
+            doc = {**e, "volume": volume_id}
+            for k in ENTITY_KINDS:
+                doc[RELATED_FIELD[k]] = _link(e[RELATED_FIELD[k]])
             (kdir / f"{e['slug']}.json").write_text(
                 json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
 
     def _summ(coll):
-        return [{"slug": e["slug"], "name": e["name"], "count": e["count"]} for e in coll]
+        return [{"slug": e["slug"], "name": e["name"], "count": e["count"],
+                  "has_narrative": e.get("narrative") is not None} for e in coll]
 
+    summaries_by_kind = {kind: _summ(finalized[kind]) for kind in ENTITY_KINDS}
     (ent_dir).mkdir(parents=True, exist_ok=True)
     (ent_dir / "index.json").write_text(
-        json.dumps({"volume": volume_id, "people": _summ(persons),
-                    "places": _summ(places_e)}, ensure_ascii=False, indent=2),
+        json.dumps({"volume": volume_id,
+                    "people": summaries_by_kind["person"],
+                    "places": summaries_by_kind["place"],
+                    "events": summaries_by_kind["event"]}, ensure_ascii=False, indent=2),
         encoding="utf-8")
+
+    glossary = build_glossary(volume_id)
+    if glossary:
+        (out_dir / "glossary.json").write_text(
+            json.dumps(glossary, ensure_ascii=False, indent=2), encoding="utf-8")
 
     index = {
         "id": volume_id,
@@ -447,9 +567,11 @@ def build_volume(vol_cfg: dict, with_images: bool) -> dict | None:
         "focus_case": vol_cfg.get("focus_case"),
         "transcribed_count": len(page_index),
         "pages": page_index,
-        "people": _summ(persons),
-        "places": _summ(places_e),
+        "people": summaries_by_kind["person"],
+        "places": summaries_by_kind["place"],
+        "events": summaries_by_kind["event"],
         "topics": [{"name": n, "count": c} for n, c in topics.most_common()],
+        "has_glossary": glossary is not None,
     }
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "index.json").write_text(
@@ -457,7 +579,7 @@ def build_volume(vol_cfg: dict, with_images: bool) -> dict | None:
     )
     print(
         f"  [ok] {volume_id}: {len(page_index)} page(s), "
-        f"{len(people)} people, {len(places)} places"
+        f"{len(people)} people, {len(places)} places, {len(events)} events"
         + (" [+images]" if with_images else "")
     )
     return {
@@ -490,10 +612,13 @@ def main() -> None:
         if not volumes:
             raise SystemExit(f"volume {args.volume!r} not found in {CONFIG}")
 
+    events_cfg = load_events_config()
+    aliases_cfg = load_aliases_config()
+
     print(f"Building site data -> {SITE_DATA.relative_to(ROOT)}")
     summaries = []
     for vol in volumes:
-        summary = build_volume(vol, args.with_images)
+        summary = build_volume(vol, args.with_images, events_cfg, aliases_cfg)
         if summary:
             summaries.append(summary)
 

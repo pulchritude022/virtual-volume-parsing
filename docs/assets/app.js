@@ -69,6 +69,31 @@ function statusBadge(status) {
   return el('span', { class: cls }, status.replace(/-/g, ' '));
 }
 
+/* Rewrite the wiki's two link conventions into real site hrefs:
+   - [text](entity:kind/slug)  -> entity.html?vol=...&kind=...&slug=...
+   - bare `img_0153` citation tokens -> a link into the viewer at that opening
+   Applied to raw markdown *before* renderMarkdown, since both are plain-text
+   rewrites (the img_NNNN form isn't valid markdown link syntax to begin with). */
+function resolveWikiLinks(md, volId) {
+  if (!md) return md;
+  // Bracketed citation groups like "[img_153]" or "[img_4–10, img_153]" are
+  // plain-text asides, not markdown links (no following "(...)") — swap their
+  // brackets for parens first so the img_NNN auto-linking below can't nest a
+  // markdown link inside an existing "[...]" and corrupt both.
+  let out = md.replace(/\[(img_\d{1,4}[^\]]*)\]/g, '($1)');
+  out = out.replace(/\(entity:(person|place|event)\/([a-z0-9-]+)\)/g,
+    (_, kind, slug) => `(entity.html?vol=${encodeURIComponent(volId)}&kind=${kind}&slug=${encodeURIComponent(slug)})`);
+  // Auto-link every remaining bare img_N / img_NNNN token. Wiki prose is
+  // written with plain page numbers (img_153); the actual page slugs are
+  // zero-padded to 4 digits (img_0153) — pad here rather than in every
+  // citation, so authoring stays terse.
+  out = out.replace(/\bimg_(\d{1,4})\b/g, (_, n) => {
+    const slug = `img_${n.padStart(4, '0')}`;
+    return `[img_${n}](viewer.html?vol=${encodeURIComponent(volId)}&img=${slug})`;
+  });
+  return out;
+}
+
 /* Tiny markdown renderer — enough for the Notes blocks (bold, code, links,
    headings, nested-ish bullet + numbered lists, paragraphs). Not general. */
 function renderMarkdown(md) {
@@ -76,7 +101,11 @@ function renderMarkdown(md) {
   const inline = (s) => esc(s)
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+    // `text`/`href` here are already HTML-escaped (esc(s) ran over the whole
+    // string above) — use them as-is; re-escaping would double-encode `&`.
+    .replace(/\[([^\]]+)\]\(((?:https?:|entity\.html|viewer\.html)[^)]+)\)/g,
+      (m, text, href) => `<a href="${href}"${/^https?:/.test(href) ? ' target="_blank" rel="noopener"' : ''}>${text}</a>`);
 
   const lines = md.replace(/\r\n/g, '\n').split('\n');
   let html = '';
@@ -132,6 +161,7 @@ async function initHome() {
       renderCopyrightCallout(),
       renderVolumeCards(volumes),
       renderContents(index),
+      renderEntityIndex('Events & controversies', index.events, 'event'),
       renderEntityIndex('People', index.people, 'person'),
       renderEntityIndex('Places', index.places, 'place'),
       renderEntityIndex('Topics', index.topics, 'topic'),
@@ -512,8 +542,10 @@ function entityChip(volId, r) {
   return el('span', { class: 'chip' }, cleanEntity(r.name), n);
 }
 
+const KIND_LABEL = { person: 'Person', place: 'Place', event: 'Event / controversy' };
+
 function renderEntity(volId, e) {
-  const kindLabel = e.kind === 'place' ? 'Place' : 'Person';
+  const kindLabel = KIND_LABEL[e.kind] || 'Entity';
   const head = el('div', { class: 'entity-head' },
     el('div', { class: 'crumbs' },
       el('a', { href: 'index.html' }, '← Overview'),
@@ -526,6 +558,13 @@ function renderEntity(volId, e) {
   const variantLine = variants.length
     ? el('p', { class: 'variants' }, el('span', { class: 'lbl' }, 'Also written: '),
         variants.map(cleanEntity).join(' · '))
+    : null;
+
+  // Stage 3b: LLM-synthesized narrative, if one has been written for this
+  // entity (data/<vol>/wiki/<kind>/<slug>.md) — resolve its entity:/img_NNNN
+  // links to real hrefs, then render as markdown, same renderer as page notes.
+  const narrative = e.narrative
+    ? el('div', { class: 'narrative prose', html: renderMarkdown(resolveWikiLinks(e.narrative, volId)) })
     : null;
 
   // Mentions — each links into the side-by-side viewer at that opening.
@@ -551,19 +590,49 @@ function renderEntity(volId, e) {
   const related = [
     relatedChips('People', e.related_people),
     relatedChips('Places', e.related_places),
+    relatedChips('Events', e.related_events),
     relatedChips('Topics', (e.topics || []).map((t) => ({ ...t, slug: null }))),
   ].filter(Boolean);
 
   return el('div', { class: 'entity-page' },
     head,
     variantLine,
-    el('p', { class: 'hint' },
-      'Consolidated from the transcribed openings below. This is an evidence index — ',
-      'every appearance of this ', e.kind, ' with links to the manuscript opening; ',
-      'a written biographical sketch will be layered on in a later pass.'),
+    narrative || el('p', { class: 'hint' },
+      'Consolidated from the transcribed openings below — an evidence index of every ',
+      'appearance of this ', e.kind, ', with links to the manuscript opening. No written ',
+      'narrative has been synthesized for this entity yet.'),
     section(`Mentions (${mentionRows.length})`, mentionRows),
     section('Appears alongside', related),
     renderFooter());
+}
+
+/* ---------------------------------------------------------------- glossary */
+
+async function initGlossary() {
+  const root = $('#glossary');
+  try {
+    const { volumes } = await getJSON('data/volumes.json');
+    const volId = qs('vol') || (volumes && volumes[0] && volumes[0].id);
+    if (!volId) { root.replaceChildren(el('p', { class: 'empty' }, 'No volume available.')); return; }
+    const g = await getJSON(`data/${volId}/glossary.json`);
+    root.replaceChildren(renderGlossary(g));
+  } catch (err) {
+    root.replaceChildren(el('div', { class: 'callout' },
+      el('b', {}, 'No glossary yet. '),
+      'Add ', el('code', {}, 'data/<volume>/glossary.md'), ' and rebuild. ', el('br'), err.message));
+  }
+}
+
+function renderGlossary(g) {
+  const head = el('div', { class: 'hero' },
+    el('div', { class: 'eyebrow' }, 'Glossary'),
+    el('h1', {}, g.title || 'Terms'),
+    el('p', { class: 'sub' }, `${g.terms.length} term${g.terms.length === 1 ? '' : 's'} — Scots, Latin, and ecclesiastical-procedural vocabulary recurring across the minutes.`));
+  const list = el('div', { class: 'glossary-list' },
+    ...g.terms.map((t) => el('div', { class: 'glossary-term', id: t.slug },
+      el('h3', {}, t.term),
+      el('div', { class: 'prose', html: renderMarkdown(t.definition) }))));
+  return el('div', {}, head, list, renderFooter());
 }
 
 /* --------------------------------------------------------------- dispatch */
@@ -572,4 +641,5 @@ document.addEventListener('DOMContentLoaded', () => {
   if ($('#home')) initHome();
   else if ($('#viewer')) initViewer();
   else if ($('#entity')) initEntity();
+  else if ($('#glossary')) initGlossary();
 });

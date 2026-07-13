@@ -49,19 +49,40 @@ volumes and to the ~1796 German-handwriting journal later.
 - Dad flags errors/omissions; corrections captured back into the .md (+ a changelog).
 - This is the "go over them together, point out flaws, collect feedback, update" workflow.
 
-### Stage 3 — Structured extraction
-- From corrected .md, extract entities → `data/<vol>/entities/` (people, places, events, dates,
-  offices, money) with **page citations** and variant spellings; resolve cross-references and
-  co-occurrences. Produces the material for Dad's "overview/summary" and "biographical sketches".
+### Stage 3 — Structured extraction  ✅ mechanical extraction + events done
+- `scripts/build_site.py` extracts people/places (front-matter, per page) into consolidated,
+  cross-linked, cited entity records under `docs/data/<vol>/entities/{person,place,event}/`,
+  with co-occurrence ("related_*") computed generically across all three kinds.
+- **Events/controversies are a first-class kind, computed automatically, never hand-tagged.**
+  `config/events.yaml` declares each event (name, image range, matching people/topic keywords);
+  `compute_page_events()` classifies every page at build time from data Stage 1 already produced.
+  Add an event → rebuild → every past *and future* transcribed page is reclassified for free.
+- **Spelling-variant fragmentation fixed via `config/aliases.yaml`** (e.g. "Livingston"/
+  "Livingstone", "Barneill"/"Balneil") — a normalised-key → canonical-key map, so real manuscript
+  spelling variance no longer splits one person into two entity pages.
 
-### Stage 4 — Wiki generation  🟡 scaffold in place
-- **Done:** `scripts/build_site.py` parses the transcription markdown (front-matter + folio
-  sections) into JSON under `docs/data/`, and a dependency-free static site (`docs/index.html`,
-  `docs/viewer.html`) renders the **side-by-side viewer** (image ⟷ diplomatic ⟷ modern English)
-  plus overview/contents and seed People/Places/Topics indexes. No framework, no build tooling —
-  regenerate with `python scripts/build_site.py`.
-- **Next:** promote the entity indexes into cross-linked pages per person/place/event (fed by
-  Stage-3 extraction), add a timeline, relationship graph, and a map of the Rhins parishes.
+### Stage 3b — Narrative synthesis (LLM-authored, human-reviewable)  🟢 pilot done
+- `data/<vol>/wiki/{person,place,event}/<slug>.md` — a Wikipedia-style biographical/narrative
+  synthesis per entity, written once (by Claude, from the corpus + existing page notes) and
+  attached to the mechanically-extracted JSON on every build — same review posture as a
+  transcription, not hand-maintained duplicate data.
+- Cross-references use a `entity:kind/slug` markdown-link scheme and bare `img_NNN` citation
+  tokens; both are resolved to real hrefs client-side (`resolveWikiLinks()` in `app.js`) so
+  authoring stays terse (no manual href-building, no zero-padding required).
+- **Piloted on ~15-20 major entities** (the 5 configured events + the dozen most-recurring
+  people + core parishes) per the "focus first" scope decision (2026-07-13). Minor one-off
+  entities still render as a plain evidence index (mentions + co-occurrence, no prose) until a
+  narrative is written for them.
+- `data/<vol>/glossary.md` — Scots/Latin/ecclesiastical-procedural terms, parsed the same way.
+
+### Stage 4 — Wiki generation  🟢 interactive wiki live
+- Dependency-free static site (`docs/index.html`, `docs/viewer.html`, `docs/entity.html`,
+  `docs/glossary.html`) renders the side-by-side viewer, an Events/People/Places/Topics home
+  index, cross-linked entity pages (narrative + cited evidence trail + related-entity chips),
+  and a glossary. No framework, no build tooling — regenerate with `python scripts/build_site.py`.
+- **Next:** write narratives for the remaining recurring entities as more images are transcribed;
+  consider a timeline view and a map of the Rhins parishes (both can reuse existing page
+  `year`/`sitting_date` and place data — no new extraction needed).
 
 ### Stage 5 — Hosting
 - **Split by copyright, decided 2026-07-12:** the **images** stay private (gitignored, never

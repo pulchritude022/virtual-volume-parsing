@@ -192,6 +192,36 @@ a.chip.link:hover { background: var(--bg-panel); border-color: var(--accent-soft
 .rel-block { margin-bottom: 14px; }
 .rel-block .lbl { font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-faint); margin-bottom: 6px; }
 
+/* ---- Narrative (Stage 3b wiki synthesis) ------------------------------- */
+.narrative { margin: 18px 0 32px; }
+.narrative.prose { font-family: var(--serif); font-size: 1.03rem; line-height: 1.68; color: var(--ink); }
+.narrative.prose h3 {
+  font-size: 1.15rem; color: var(--ink); margin: 26px 0 8px;
+  padding-bottom: 6px; border-bottom: 1px solid var(--rule);
+}
+.narrative.prose p { margin: 0 0 14px; }
+.narrative.prose ul, .narrative.prose ol { margin: 6px 0 14px; padding-left: 24px; }
+.narrative.prose li { margin: 4px 0; }
+.narrative.prose strong { color: var(--ink); }
+.narrative.prose a { border-bottom: 1px dotted var(--accent-soft); }
+.narrative.prose a:hover { text-decoration: none; border-bottom-style: solid; }
+
+/* Event/controversy chips get a distinct tint from person/place chips. */
+.chip.event { border-color: color-mix(in srgb, var(--gold) 45%, var(--rule)); }
+a.chip.link.event, a.chip.link[href*="kind=event"] { color: var(--gold); }
+a.chip.link[href*="kind=event"]:hover { border-color: var(--gold); color: var(--gold); }
+
+/* ---- Glossary ----------------------------------------------------------- */
+.glossary-list { margin-top: 24px; display: grid; gap: 20px; }
+.glossary-term {
+  background: var(--bg-panel); border: 1px solid var(--rule); border-radius: 10px;
+  padding: 16px 20px;
+}
+.glossary-term h3 { font-family: var(--serif); font-size: 1.1rem; margin: 0 0 8px; color: var(--accent); }
+.glossary-term .prose { font-size: .96rem; line-height: 1.6; color: var(--ink-soft); }
+.glossary-term .prose p { margin: 0 0 8px; }
+.glossary-term .prose p:last-child { margin-bottom: 0; }
+
 /* ---- Page list (contents) --------------------------------------------- */
 
 .year-group { margin-bottom: 22px; }

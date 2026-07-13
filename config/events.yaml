@@ -1,0 +1,46 @@
+# Event / controversy catalog — Stage 3/4 wiki.
+#
+# Events are NOT tagged by hand in transcription front-matter. Membership is
+# computed deterministically at build time (scripts/build_site.py) from data
+# already extracted from each page (its image number + the `people`/`topics`
+# front-matter lists already produced at Stage 1). Add a new event here and
+# every past + future transcribed page is re-classified automatically the
+# next time the site is built — no markdown files need editing.
+#
+# Matching rule per page: image_number must fall in `image_range` (inclusive;
+# omit `max` for "still open"), AND (any `people_any` substring is found,
+# case-insensitively, in one of the page's `people`) OR (any `topics_any`
+# substring is found in one of the page's `topics`). If only one of
+# `people_any`/`topics_any` is given, only that test applies.
+#
+# `name` is the exact display string threaded through the generic entity
+# pipeline (same as a person/place name) — keep it stable once wiki narrative
+# files are written under data/<volume>/wiki/event/<slug>.md, since the slug
+# is derived from this name.
+
+events:
+  - name: "Mr Gilbert Power's deposition and reposition"
+    image_range: { min: 2, max: 69 }
+    people_any: ["gilbert power"]
+
+  - name: "The Ardwell adultery-slander case"
+    image_range: { min: 112, max: 143 }
+    people_any: ["ardwell", "lady freugh", "jean fyfe"]
+
+  - name: "The division and planting of Glenluce"
+    image_range: { min: 70, max: 150 }
+    # topics_any as a list of groups: a page must match at least one keyword
+    # from EVERY group (AND across groups, OR within a group) — narrows to
+    # "glenluce" + a planting/stipend/heritor-dispute keyword together.
+    topics_any:
+      - ["glenluce"]
+      - ["planting", "division", "new-kirk", "new-luce", "stipend", "mortification",
+         "heritors", "call", "admission", "moor-kirk"]
+
+  - name: "The post-Engagement purge of malignants"
+    image_range: { min: 136, max: 168 }
+    topics_any: ["engagement", "malignant"]
+
+  - name: "James Ross of Balneil's malignancy process"
+    image_range: { min: 143, max: 260 }
+    people_any: ["balneil"]

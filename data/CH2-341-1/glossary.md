@@ -124,3 +124,133 @@ presbytery negotiates with (and sometimes sues) over Glenluce's finances.
 A set theological topic assigned to a presbytery member to write and defend before the
 court as part of the regular "exercise" — a recurring feature of ordinary presbytery
 business between discipline cases (e.g. *de statu primi hominis*, *de libero arbitrio*).
+
+## Exercise and addition
+
+The set-piece Bible exposition that opened most sittings: one minister "made the exercise"
+(the main exposition of a passage) and a second "added" (a further treatment of the same
+text), after which the brethren judged the doctrine and "approven" it. The rota of who was
+to exercise and add — and be censured for absence — is one of the volume's steadiest
+rhythms, running right alongside the discipline business.
+
+## Resolutioner
+
+After 1650, the majority party in the Church of Scotland who accepted the "Public
+Resolutions" — the decision to readmit former royalists and Engagers to the army and to
+public office to fight the invading English. The split with the [Protesters](#protester-remonstrant)
+over this question is the great fracture of the volume's final years.
+
+## Protester (Remonstrant)
+
+The minority party who *protested* against the Public Resolutions, holding that the Kirk
+must not make common cause with "malignants" even against Cromwell. In this presbytery **Mr
+Alexander Turnbull** is the leading Protester; his repeated demand that his protestation be
+entered "in the register, or all buried" dominates the closing folios (1652).
+
+## Public Resolutions
+
+The acts of the 1650–51 Commissions of the General Assembly (ratified at the 1651 Assembly)
+that lifted the exclusions of the [Act of Classes](#act-of-classes) so that Engagers and
+royalists could serve against the English invasion — the measure the [Protesters](#protester-remonstrant)
+rejected.
+
+## The Tender of Union
+
+The English Commonwealth's 1652 offer (the "Tender") to incorporate Scotland into a single
+Commonwealth with England — the beginning of the Cromwellian union. This presbytery's
+response was to draw up a **warning and declaration against "the foundation of union betwixt
+the kingdoms" and "unlimited obedience to the [usurped] authority"** and to ordain it read
+from every pulpit (imgs 254–255) — a rare surviving pulpit-protest against the union.
+
+## Act of Classes
+
+The 1649 Act of the Scottish Parliament barring former Engagers and royalists (sorted into
+"classes" by degree of guilt) from public and military office — the legal backbone of the
+[post-Engagement purge](entity:event/the-post-engagement-purge-of-malignants) the presbytery
+enforced, and the exclusion later reversed by the [Public Resolutions](#public-resolutions).
+
+## Sederunt
+
+The list of those present at a sitting, recorded at its head ("the qlk day, sederunt …") —
+Latin *sederunt*, "they sat." Absences from the sederunt were themselves censurable, and the
+roll of who attended is how the volume tracks the working membership of the court over eleven
+years.
+
+## Delation / to delate
+
+To formally report or accuse someone of an offence before the court; a *delation* is the
+report itself. Much of the presbytery's discipline business begins with a parish session
+delating a scandal upward.
+
+## Compear / compearance
+
+To appear in person before the court when summoned (Scots *compeir*). To be "lawfully cited"
+and then not compear was *contumacy*, escalating through second and third summons toward
+excommunication.
+
+## Purgation by oath
+
+Clearing oneself of a scandal by swearing a solemn oath of innocence (the "oath of
+purgation"), where no sufficient proof could be led — offered, refused, or taken at several
+points in the adultery cases. Distinct from [compurgation](#compurgation), which adds
+oath-helpers who swear to the party's credibility.
+
+## Relict
+
+The surviving widow of a named man (Scots/legal *relict*, "one left behind"). Women in the
+record are very often identified only as "relict of" or "spouse to" a man — the main way
+kinship surfaces at all in a court that cared about households, testaments, and liability
+rather than genealogy.
+
+## Testimonial (testificate)
+
+A written character-and-conduct certificate from a person's own kirk session, required
+before admission to communion, marriage, or reception into a new parish — the era's
+portable proof of good standing, and a recurring demand when people moved between the Rhins
+parishes or across to Ireland.
+
+## Edict
+
+A public proclamation read from the pulpit on the Sabbath — most often an *edict of
+admission* (citing any objectors to a minister's settlement to appear) or an edict summoning
+someone under discipline. "Edictally cited" means summoned by such public reading rather than
+in person.
+
+## Perambulation
+
+The formal walking and marking of a parish's or glebe's boundaries by appointed men — the
+method used to settle the physical bounds in the Glenluce division and in glebe-and-manse
+disputes.
+
+## Fast, humiliation, and thanksgiving
+
+Days of public worship appointed for the whole bounds: a *fast* or *humiliation* (with a set
+"catalogue of the causes of wrath" — national sins to be confessed) in time of danger, or a
+*thanksgiving* for a deliverance or victory. These national appointments (e.g. after Dunbar,
+or for the harvest) synchronise the local minutes with the national calendar of crisis.
+
+## Turning the riddle (the sieve and shears)
+
+A folk-divination practice — suspending a sieve ("riddle") on shears and reading its
+movement to identify a thief or answer a question — prosecuted here as superstition and
+charming (img 236 ff.). One of several windows the discipline record opens onto popular
+belief beneath the official religion.
+
+## Western Association
+
+The regional military-and-covenanting combination of the south-western shires (Ayr,
+Wigtown, Kirkcudbright, and their presbyteries) organised for defence and for the levy of
+men and money in the war years — the body through which much of the presbytery's
+mobilisation business was routed.
+
+## Pro re nata
+
+Latin, "for a matter [that has] arisen": an extraordinary sitting called between the ordinary
+diets to deal with urgent business that could not wait for the next scheduled meeting.
+
+## Poinding and horning
+
+Two stages of Scots debt/enforcement law that surface in the court's civil-adjacent business:
+*poinding* is the seizure and appraisal of a debtor's moveable goods (e.g. "oxen poinded"),
+and "letters of *horning*" are royal letters denouncing a defaulter as a rebel (put "to the
+horn") for failing to obey a legal charge.

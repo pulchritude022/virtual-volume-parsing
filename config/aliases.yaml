@@ -11,12 +11,47 @@
 # merges into the RIGHT side (the canonical form used for the entity's
 # display name/slug). Extend this file as new splinters are noticed; no code
 # change needed.
+#
+# Only high-confidence merges are recorded here — a scribal spelling of the
+# SAME person/place. Genuinely ambiguous cases (e.g. "Mr John Crosse" vs "Mr
+# John Crookes", or two distinct Alexander McDowalls) are left un-merged and
+# flagged for Stage-2 human review instead of silently conflated.
 
 person:
+  # --- ministers of the presbytery (high-frequency, clearly one person) ---
   "mr john livingston": "mr john livingstone"
+  "mr john levingstoun": "mr john livingstone"
+  "mr alexr turnbull": "mr alexander turnbull"     # the Protester; 57+82 = one man
+  "mr james lowrie": "mr james lawrie"             # same minister, Lawrie/Lowrie
+  "mr hugh hutcheson": "mr hew hutcheson"
+  # --- gentry / heritors ---
   "the earl of galloway": "earl of galloway"
   "james ross of barneill": "james ross of balneil"
   "james ross of barneil": "james ross of balneil"
-  "mr hugh hutcheson": "mr hew hutcheson"
+  # The Laird of Garthland in this period is Sir James McDowall of Garthland;
+  # the record names him several ways. Merge the clear variants, not the bare
+  # "of garthland" fragment (which can be a place-adjacent split).
+  "laird of garthland": "the laird of garthland"
+  "macdowall of garthland": "the laird of garthland"
+  "james mcdowall of garthland": "the laird of garthland"
 
-place: {}
+place:
+  # --- parishes of the Presbytery of Stranraer (the Rhins) ---
+  "stranrawer": "stranraer"
+  "stonikirk": "stoneykirk"
+  "stanikirk": "stoneykirk"
+  "stonykirk": "stoneykirk"
+  "kirkolm": "kirkcolm"
+  # Portmontgomery = the old name for the Portpatrick charge; the record
+  # itself equates them ("Portmontgomerie (Portpatrick)").
+  "portmontgomerie portpatrick": "portmontgomery"
+  # --- Machars / neighbouring burghs ---
+  "wigton": "wigtown"
+  "wigtoun": "wigtown"
+  # --- Glenluce cluster ---
+  "new glenluce": "new kirk of glenluce"
+  "new kirk of glenluce new luce": "new kirk of glenluce"
+  # --- other scribal variants ---
+  "balneill": "balneil"
+  "barlockhart": "barlockart"
+  "donaghadie": "donaghadee"

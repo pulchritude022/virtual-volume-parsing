@@ -44,3 +44,75 @@ events:
   - name: "James Ross of Balneil's malignancy process"
     image_range: { min: 143, max: 260 }
     people_any: ["balneil"]
+
+  # ----------------------------------------------------------------------- #
+  # 1648–1652: the national crisis reaches Galloway (added after the full
+  # corpus was transcribed). Ranges use the volume's year_sections
+  # (1649→159, 1650→182, 1651→218, 1652→248).
+  # ----------------------------------------------------------------------- #
+
+  - name: "The renewal of the Covenant (1648–1649)"
+    image_range: { min: 150, max: 185 }
+    topics_any: ["covenant-renew", "covenant renewal", "renewing the covenant",
+                 "covenant-subscription", "solemn acknowledgment",
+                 "receiving to the covenant", "debarring engagers",
+                 "subscribing the national covenant", "self-vindication before covenant"]
+
+  - name: "The Dunbar prisoners' relief"
+    image_range: { min: 195, max: 255 }
+    topics_any: ["dunbar"]
+
+  - name: "The Resolutioner–Protester schism"
+    image_range: { min: 228, max: 257 }
+    people_any: ["turnbull"]
+    topics_any: ["resolutioner", "protester", "protestation", "public-resolution",
+                 "public resolutions", "dissent", "conscience"]
+
+  - name: "The Cromwellian conquest and the Tender of Union"
+    image_range: { min: 238, max: 257 }
+    topics_any: ["union", "tender-of-union", "english-union", "cromwellian",
+                 "cromwell", "warning", "national-declaration", "declaration"]
+
+  # ----------------------------------------------------------------------- #
+  # Cross-corpus thematic threads ("smaller events / other content"): each is
+  # a curated index of a recurring kind of business the presbytery handled,
+  # aggregated automatically from the topics Stage 1 already extracted.
+  # ----------------------------------------------------------------------- #
+
+  - name: "Witchcraft before the presbytery"
+    image_range: { min: 2, max: 257 }
+    topics_any: ["witch", "riddle", "divination", "charming", "superstition", "sieve"]
+
+  - name: "The Ulster connection: letters across the North Channel"
+    image_range: { min: 2, max: 257 }
+    topics_any: ["ireland-correspondence", "correspondence-ireland", "letters-to-ireland",
+                 "letter-to-ireland", "letter from ireland", "letters to ireland",
+                 "blair-to-ireland", "blair-in-ireland", "livingston-to-ireland",
+                 "livingstone-to-ireland", "dublin", "ulster", "donaghad",
+                 "clandestine-marriage-ireland", "correspondence-ireland-ayr",
+                 "correspondence with wigtown", "irish-refugee", "irish refugee"]
+
+  - name: "Fugitives from discipline"
+    image_range: { min: 2, max: 257 }
+    topics_any: ["fugitive", "fled", "absconder", "flight-to", "revolted-passengers"]
+
+  - name: "The war years: levies and the Western Association"
+    image_range: { min: 90, max: 235 }
+    topics_any: ["mobilisation", "committee-of-war", "committee of war",
+                 "western-association", "levy", "army-levy", "muster", "rendezvous",
+                 "militia", "purging-the-army", "purging judicatories", "quartering",
+                 "regiment", "soldiers"]
+
+  - name: "The poor, the widows, and the orphans of war"
+    image_range: { min: 2, max: 257 }
+    topics_any: ["poor-relief", "poor relief", "widows-and-orphans", "widows and orphans",
+                 "war-widows", "orphans", "irish-refugee-relief", "poor-fund",
+                 "poor-box", "poor-relief-mortification"]
+
+  - name: "Blood and quarrels: duels, combats, and assaults"
+    image_range: { min: 2, max: 257 }
+    topics_any: ["duel", "combat", "assault", "robbery", "oppression", "barn-breaking", "tumult"]
+
+  - name: "Usury and the moral economy"
+    image_range: { min: 2, max: 257 }
+    topics_any: ["usury", "annualrent"]

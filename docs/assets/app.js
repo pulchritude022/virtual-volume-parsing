@@ -104,7 +104,7 @@ function renderMarkdown(md) {
     .replace(/\*([^*]+)\*/g, '<em>$1</em>')
     // `text`/`href` here are already HTML-escaped (esc(s) ran over the whole
     // string above) — use them as-is; re-escaping would double-encode `&`.
-    .replace(/\[([^\]]+)\]\(((?:https?:|entity\.html|viewer\.html)[^)]+)\)/g,
+    .replace(/\[([^\]]+)\]\(((?:https?:|entity\.html|viewer\.html|#)[^)]+)\)/g,
       (m, text, href) => `<a href="${href}"${/^https?:/.test(href) ? ' target="_blank" rel="noopener"' : ''}>${text}</a>`);
 
   const lines = md.replace(/\r\n/g, '\n').split('\n');
@@ -666,7 +666,7 @@ function renderGlossary(g) {
   const list = el('div', { class: 'glossary-list' },
     ...g.terms.map((t) => el('div', { class: 'glossary-term', id: t.slug },
       el('h3', {}, t.term),
-      el('div', { class: 'prose', html: renderMarkdown(t.definition) }))));
+      el('div', { class: 'prose', html: renderMarkdown(resolveWikiLinks(t.definition, g.volume)) }))));
   return el('div', {}, head, list, renderFooter());
 }
 

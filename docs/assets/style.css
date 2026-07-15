@@ -21,6 +21,9 @@
   --serif: "Iowan Old Style", "Palatino Linotype", "Palatino", "Georgia", "Times New Roman", serif;
   --sans: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --maxw: 1200px;
+  --map-sea: #eae1cb;
+  --map-land: #fbf7ee;
+  --map-coast: #b9a468;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -39,6 +42,9 @@
     --warn: #d9ad55;
     --low: #e08a76;
     --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .3);
+    --map-sea: #14110c;
+    --map-land: #2f2a22;
+    --map-coast: #6f5f38;
   }
 }
 
@@ -392,6 +398,30 @@ details.notes-details[open] > summary::before { transform: rotate(90deg); }
 }
 .lightbox.open { display: flex; }
 .lightbox img { max-width: 100%; max-height: 100%; border-radius: 6px; box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+
+/* ---- Map --------------------------------------------------------------- */
+.map-card { padding: 10px; }
+.map-wrap { width: 100%; }
+.map-svg { width: 100%; height: auto; display: block; max-height: 78vh; }
+.map-svg .map-water {
+  font-family: var(--serif); font-style: italic; font-size: 15px;
+  fill: var(--map-coast); letter-spacing: .06em;
+}
+.map-svg .map-label {
+  font-family: var(--serif); font-size: 15px; fill: var(--ink); font-weight: 600;
+  paint-order: stroke; stroke: var(--map-land); stroke-width: 3px; stroke-linejoin: round;
+}
+.map-svg .map-label.neigh { fill: var(--ink-faint); font-weight: 500; }
+.map-svg .map-count {
+  font-family: var(--mono); font-size: 11px; fill: var(--ink-faint);
+  paint-order: stroke; stroke: var(--map-land); stroke-width: 3px;
+}
+.map-svg .map-parish { cursor: pointer; }
+.map-svg .map-parish circle { transition: fill-opacity .12s, r .12s; }
+.map-svg .map-parish:hover circle:first-of-type { fill-opacity: .9; }
+.map-svg .map-parish:hover .map-label { fill: var(--accent); }
+.map-legend { margin-top: 16px; }
+.map-legend .lbl { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); margin-bottom: 8px; }
 
 /* misc */
 .empty { color: var(--ink-faint); font-style: italic; }

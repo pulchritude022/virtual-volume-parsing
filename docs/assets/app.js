@@ -670,6 +670,121 @@ function renderGlossary(g) {
   return el('div', {}, head, list, renderFooter());
 }
 
+/* -------------------------------------------------------------------- map */
+
+/* Schematic cartography of the Presbytery of Stranraer (the Rhins of
+   Galloway) + the Glenluce charges and neighbouring Wigtown. Coordinates are
+   hand-placed in the SVG's 640x840 space from the parishes' real relative
+   positions — this is presentation geography, deliberately kept out of the
+   record-data pipeline. `slug` joins each parish to its place-entity page and
+   mention count (from index.json). `kind`: 'rhins' = a parish of this
+   presbytery; 'neighbour' = context. */
+const MAP_GEO = {
+  viewBox: '0 0 640 840',
+  parishes: [
+    { name: 'New Luce',    slug: 'new-kirk-of-glenluce', x: 360, y: 165, kind: 'rhins' },
+    { name: 'Kirkcolm',    slug: 'kirkcolm',   x: 150, y: 150, kind: 'rhins' },
+    { name: 'Leswalt',     slug: 'leswalt',    x: 150, y: 268, kind: 'rhins' },
+    { name: 'Inch',        slug: 'inch',       x: 246, y: 258, kind: 'rhins' },
+    { name: 'Stranraer',   slug: 'stranraer',  x: 205, y: 322, kind: 'rhins' },
+    { name: 'Portpatrick', slug: 'portpatrick',x: 104, y: 398, kind: 'rhins' },
+    { name: 'Portmontgomery', slug: 'portmontgomery', x: 96, y: 470, kind: 'rhins' },
+    { name: 'Stoneykirk',  slug: 'stoneykirk', x: 196, y: 500, kind: 'rhins' },
+    { name: 'Kirkmaiden',  slug: 'kirkmaiden', x: 214, y: 726, kind: 'rhins' },
+    { name: 'Glenluce',    slug: 'glenluce',   x: 336, y: 372, kind: 'rhins' },
+    { name: 'Wigtown',     slug: 'wigtown',    x: 542, y: 356, kind: 'neighbour' },
+  ],
+  // Stylized landmass + sea inlets, drawn tonally (no bright blue) for an
+  // engraved-map feel. Loch Ryan bites in from the north; Luce Bay from the SE.
+  land: 'M104 96 C150 70 210 74 250 92 C300 74 360 84 402 104 '
+      + 'C470 120 560 150 596 210 C612 300 590 372 560 392 '
+      + 'C470 400 470 470 452 520 C300 560 264 640 236 760 '
+      + 'C226 800 196 800 186 762 C150 640 176 560 150 520 '
+      + 'C118 470 96 470 92 420 C76 340 70 250 78 180 C84 140 92 112 104 96 Z',
+  lochRyan: 'M196 96 C214 160 226 250 214 320 C210 344 176 344 172 320 '
+          + 'C160 250 150 160 158 100 C168 80 190 80 196 96 Z',
+  luceBay: 'M470 470 C440 560 360 620 300 660 C420 620 470 540 500 470 '
+         + 'C512 440 482 440 470 470 Z',
+};
+
+async function initMap() {
+  const root = $('#map');
+  try {
+    const { volumes } = await getJSON('data/volumes.json');
+    const volId = qs('vol') || (volumes && volumes[0] && volumes[0].id);
+    if (!volId) { root.replaceChildren(el('p', { class: 'empty' }, 'No volume available.')); return; }
+    const index = await getJSON(`data/${volId}/index.json`);
+    root.replaceChildren(renderMap(volId, index));
+  } catch (err) {
+    root.replaceChildren(el('div', { class: 'callout' },
+      el('b', {}, 'Could not load the map. '),
+      'Run ', el('code', {}, 'python scripts/build_site.py'), ' and open over http. ',
+      el('br'), esc(err.message)));
+  }
+}
+
+function renderMap(volId, index) {
+  const counts = {};
+  for (const p of index.places || []) counts[p.slug] = p.count;
+  const geo = MAP_GEO;
+  const rhins = geo.parishes.filter((p) => counts[p.slug] || p.kind === 'rhins');
+  const maxCount = Math.max(1, ...rhins.map((p) => counts[p.slug] || 0));
+  const rFor = (c) => 7 + Math.sqrt(c || 0) / Math.sqrt(maxCount) * 23;
+  const opFor = (c) => 0.28 + 0.62 * ((c || 0) / maxCount);
+
+  // Build the SVG as a string (createElementNS avoided; one innerHTML set).
+  const markers = geo.parishes.map((p) => {
+    const c = counts[p.slug] || 0;
+    const r = rFor(c);
+    const neigh = p.kind === 'neighbour';
+    const fill = neigh ? 'var(--ink-faint)' : 'var(--accent)';
+    const href = `entity.html?vol=${encodeURIComponent(volId)}&kind=place&slug=${encodeURIComponent(p.slug)}`;
+    const labelDy = -(r + 7);
+    return `<a href="${href}" class="map-parish" aria-label="${esc(p.name)}, ${c} openings">
+      <circle cx="${p.x}" cy="${p.y}" r="${r.toFixed(1)}" fill="${fill}" fill-opacity="${opFor(c).toFixed(2)}"
+        stroke="${fill}" stroke-width="1.4"></circle>
+      <circle cx="${p.x}" cy="${p.y}" r="2.4" fill="${fill}"></circle>
+      <text x="${p.x}" y="${p.y + labelDy}" text-anchor="middle" class="map-label${neigh ? ' neigh' : ''}">${esc(p.name)}</text>
+      <text x="${p.x}" y="${p.y + labelDy + 14}" text-anchor="middle" class="map-count">${c || '—'}</text>
+    </a>`;
+  }).join('');
+
+  const svg = `<svg viewBox="${geo.viewBox}" class="map-svg" role="img" aria-label="Map of the parishes of the Presbytery of Stranraer">
+    <rect x="0" y="0" width="640" height="840" fill="var(--map-sea)"></rect>
+    <path d="${geo.land}" fill="var(--map-land)" stroke="var(--map-coast)" stroke-width="2"></path>
+    <path d="${geo.lochRyan}" fill="var(--map-sea)" stroke="var(--map-coast)" stroke-width="1.2"></path>
+    <path d="${geo.luceBay}" fill="var(--map-sea)" stroke="var(--map-coast)" stroke-width="1.2"></path>
+    <text x="176" y="210" class="map-water" transform="rotate(78 176 210)">Loch Ryan</text>
+    <text x="392" y="600" class="map-water">Luce Bay</text>
+    <text x="70" y="330" class="map-water" transform="rotate(-90 70 330)">Irish Sea</text>
+    <text x="596" y="470" class="map-water" text-anchor="end">the Machars →</text>
+    ${markers}
+  </svg>`;
+
+  const head = el('div', { class: 'hero' },
+    el('div', { class: 'eyebrow' }, 'Map · the Rhins of Galloway'),
+    el('h1', {}, 'The bounds of the presbytery'),
+    el('p', { class: 'sub' },
+      'The nine parishes of the Presbytery of Stranraer — the Rhins peninsula and the ' +
+      'Glenluce charges to the east — with neighbouring Wigtown for context. Each marker ' +
+      'is sized and shaded by how many openings name that place; click one to open its ' +
+      'consolidated page. Positions are schematic.'));
+
+  const wrap = el('div', { class: 'map-wrap' });
+  wrap.innerHTML = svg;
+
+  const legend = el('div', { class: 'map-legend' },
+    el('span', { class: 'lbl' }, 'Marker size = openings that name the place'),
+    el('div', { class: 'chips' },
+      ...index.places.filter((p) => MAP_GEO.parishes.some((g) => g.slug === p.slug))
+        .sort((a, b) => b.count - a.count)
+        .map((p) => el('a', { class: 'chip link',
+          href: `entity.html?vol=${encodeURIComponent(volId)}&kind=place&slug=${encodeURIComponent(p.slug)}` },
+          cleanEntity(p.name), el('span', { class: 'n' }, p.count)))));
+
+  return el('div', {}, head, el('div', { class: 'card map-card' }, wrap), legend, renderFooter());
+}
+
 /* --------------------------------------------------------------- dispatch */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -678,4 +793,5 @@ document.addEventListener('DOMContentLoaded', () => {
   else if ($('#entity')) initEntity();
   else if ($('#glossary')) initGlossary();
   else if ($('#contents')) initContents();
+  else if ($('#map')) initMap();
 });

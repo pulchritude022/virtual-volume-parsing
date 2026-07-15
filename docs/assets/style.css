@@ -429,19 +429,14 @@ details.notes-details[open] > summary::before { transform: rotate(90deg); }
 .tl-card { padding: 20px 0; overflow-x: auto; }
 .tl-chart { position: relative; width: 100%; min-width: 900px; padding: 0 84px; box-sizing: border-box; }
 /* upper track: national event flags */
-.tl-flags { position: relative; height: 290px; }
+.tl-flags { position: relative; }
+/* Each flag's height (its stem length / lane) is set inline by the packer. */
 .tl-flag { position: absolute; bottom: 0; transform: translateX(-50%); width: 150px; text-align: center; }
-.tl-flag.tier-0 { height: 150px; }
-.tl-flag.tier-1 { height: 200px; }
-.tl-flag.tier-2 { height: 100px; }
 .tl-flag-dot {
   position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%);
   width: 10px; height: 10px; border-radius: 50%; background: var(--gold); border: 2px solid var(--bg-panel);
 }
-.tl-flag-stem { position: absolute; bottom: 0; left: 50%; width: 1.5px; background: var(--rule); }
-.tl-flag.tier-0 .tl-flag-stem { height: 150px; }
-.tl-flag.tier-1 .tl-flag-stem { height: 200px; }
-.tl-flag.tier-2 .tl-flag-stem { height: 100px; }
+.tl-flag-stem { position: absolute; bottom: 0; left: 50%; width: 1.5px; height: 100%; background: var(--rule); }
 .tl-flag-card {
   position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
   width: 148px; display: block; padding: 7px 9px; margin-bottom: 2px;
@@ -506,10 +501,15 @@ a.tl-flag.link:hover .tl-flag-dot { background: var(--accent); }
 .net-node { cursor: pointer; }
 .net-node:hover .net-label { fill: var(--accent); font-weight: 600; }
 .net-svg.isolating .net-label { fill: var(--ink-faint); }
-.net-node.dim { opacity: .18; }
-.net-edge { transition: stroke-opacity .1s; }
-.net-svg.isolating .net-edge { stroke-opacity: .03 !important; }
-.net-edge.on { stroke: var(--accent) !important; stroke-opacity: .55 !important; }
+.net-node.dim { opacity: .14; transition: opacity .12s; }
+/* connected dots emphasised: accent ring + brighter label */
+.net-node.hi circle { stroke: var(--accent); stroke-width: 2.4; }
+.net-node.hi .net-label { fill: var(--ink); font-weight: 600; }
+.net-edge { transition: stroke-opacity .1s, stroke-width .1s; }
+/* dim only the NON-incident edges; the incident (.on) edges keep the inline
+   opacity/width the hover handler sets from each tie's weight. */
+.net-svg.isolating .net-edge:not(.on) { stroke-opacity: .02 !important; }
+.net-edge.on { stroke: var(--accent) !important; }
 .net-legend { margin-top: 14px; }
 .net-swatch { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
 

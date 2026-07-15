@@ -883,14 +883,32 @@ function renderTimeline(volId, index) {
     }, el('span', { class: 'tl-bar-n' }, g.pages.length)));
   }
 
-  // national flags above the axis, staggered across 3 tiers to avoid overlap
-  const flags = el('div', { class: 'tl-flags' });
+  // National flags above the axis. Greedy lane-packing: sweeping left→right,
+  // each flag takes the lowest lane whose previous flag is far enough away that
+  // their cards can't collide; otherwise it starts a new (taller) lane. This
+  // fans a dense cluster (1648–52) into a clean staircase instead of a pile-up.
+  const MIN_SEP = 2.0;          // years; ~one card-width at the min chart width
+  const laneLastT = [];
+  const laneOf = {};
+  NATIONAL_EVENTS.map((n, i) => ({ n, i })).sort((a, b) => a.n.t - b.n.t)
+    .forEach(({ n, i }) => {
+      let lane = laneLastT.findIndex((lt) => n.t - lt >= MIN_SEP);
+      if (lane < 0) { lane = laneLastT.length; laneLastT.push(n.t); }
+      else { laneLastT[lane] = n.t; }
+      laneOf[i] = lane;
+    });
+  const maxLane = Math.max(0, ...Object.values(laneOf));
+  // STEM_STEP must exceed the tallest card (~120px with a wrapped note + link)
+  // so adjacent lanes never touch.
+  const STEM_BASE = 92, STEM_STEP = 134, CARD_H = 128;
+  const stemH = (lane) => STEM_BASE + lane * STEM_STEP;
+
+  const flags = el('div', { class: 'tl-flags', style: `height:${stemH(maxLane) + CARD_H}px` });
   NATIONAL_EVENTS.forEach((n, i) => {
-    const tier = i % 3;
     const href = n.event ? `entity.html?vol=${encodeURIComponent(volId)}&kind=event&slug=${n.event}` : null;
     const card = el(href ? 'a' : 'div', {
-      class: `tl-flag tier-${tier}${href ? ' link' : ''}`,
-      style: `left:${tx(n.t)}%`,
+      class: `tl-flag${href ? ' link' : ''}`,
+      style: `left:${tx(n.t)}%; height:${stemH(laneOf[i])}px`,
       href,
     },
       el('span', { class: 'tl-flag-dot' }),
@@ -1078,8 +1096,9 @@ function renderNetwork(volId, graph) {
     if (!a || !b) return '';
     const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
     const ctrlX = cx + (mx - cx) * 0.3, ctrlY = cy + (my - cy) * 0.3;
-    const op = (0.05 + 0.5 * Math.sqrt(e.w / maxW)).toFixed(3);
-    return `<path class="net-edge" data-a="${e.a}" data-b="${e.b}" d="M${a.x.toFixed(1)} ${a.y.toFixed(1)} Q${ctrlX.toFixed(1)} ${ctrlY.toFixed(1)} ${b.x.toFixed(1)} ${b.y.toFixed(1)}" fill="none" stroke="var(--ink-faint)" stroke-opacity="${op}" stroke-width="${(0.4 + 1.8 * (e.w / maxW)).toFixed(2)}"></path>`;
+    const nw = e.w / maxW;
+    const op = (0.05 + 0.5 * Math.sqrt(nw)).toFixed(3);
+    return `<path class="net-edge" data-a="${e.a}" data-b="${e.b}" data-w="${nw.toFixed(3)}" d="M${a.x.toFixed(1)} ${a.y.toFixed(1)} Q${ctrlX.toFixed(1)} ${ctrlY.toFixed(1)} ${b.x.toFixed(1)} ${b.y.toFixed(1)}" fill="none" stroke="var(--ink-faint)" stroke-opacity="${op}" stroke-width="${(0.4 + 1.8 * nw).toFixed(2)}"></path>`;
   }).join('');
 
   const nodeSvg = nodes.map((n) => {
@@ -1126,20 +1145,31 @@ function renderNetwork(volId, graph) {
       const slug = node.getAttribute('data-slug');
       node.addEventListener('mouseenter', () => {
         svgEl.classList.add('isolating');
-        svgEl.querySelectorAll('.net-edge').forEach((ed) => {
-          const on = ed.getAttribute('data-a') === slug || ed.getAttribute('data-b') === slug;
-          ed.classList.toggle('on', on);
-        });
         const nbrs = new Set([slug]);
-        svgEl.querySelectorAll('.net-edge.on').forEach((ed) => {
-          nbrs.add(ed.getAttribute('data-a')); nbrs.add(ed.getAttribute('data-b'));
+        svgEl.querySelectorAll('.net-edge').forEach((ed) => {
+          const on = ed.dataset.a === slug || ed.dataset.b === slug;
+          if (on) {
+            ed.classList.add('on');
+            // Weight the highlight by the tie's strength: stronger co-occurrence
+            // ties are drawn thicker and more opaque than incidental ones.
+            const w = parseFloat(ed.dataset.w) || 0;
+            ed.style.strokeOpacity = (0.32 + 0.6 * w).toFixed(3);
+            ed.style.strokeWidth = (1.2 + 4.5 * w).toFixed(2);
+            nbrs.add(ed.dataset.a); nbrs.add(ed.dataset.b);
+          }
         });
-        svgEl.querySelectorAll('.net-node').forEach((nd) =>
-          nd.classList.toggle('dim', !nbrs.has(nd.getAttribute('data-slug'))));
+        svgEl.querySelectorAll('.net-node').forEach((nd) => {
+          const s = nd.dataset.slug;
+          nd.classList.toggle('hi', nbrs.has(s));
+          nd.classList.toggle('dim', !nbrs.has(s));
+        });
       });
       node.addEventListener('mouseleave', () => {
         svgEl.classList.remove('isolating');
-        svgEl.querySelectorAll('.net-edge.on').forEach((ed) => ed.classList.remove('on'));
+        svgEl.querySelectorAll('.net-edge.on').forEach((ed) => {
+          ed.classList.remove('on'); ed.style.strokeOpacity = ''; ed.style.strokeWidth = '';
+        });
+        svgEl.querySelectorAll('.net-node.hi').forEach((nd) => nd.classList.remove('hi'));
         svgEl.querySelectorAll('.net-node.dim').forEach((nd) => nd.classList.remove('dim'));
       });
     });

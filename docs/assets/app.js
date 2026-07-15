@@ -708,29 +708,32 @@ function renderGlossary(g) {
 const MAP_GEO = {
   viewBox: '0 0 640 840',
   parishes: [
-    { name: 'New Luce',    slug: 'new-kirk-of-glenluce', x: 360, y: 165, kind: 'rhins' },
-    { name: 'Kirkcolm',    slug: 'kirkcolm',   x: 150, y: 150, kind: 'rhins' },
-    { name: 'Leswalt',     slug: 'leswalt',    x: 150, y: 268, kind: 'rhins' },
-    { name: 'Inch',        slug: 'inch',       x: 246, y: 258, kind: 'rhins' },
-    { name: 'Stranraer',   slug: 'stranraer',  x: 205, y: 322, kind: 'rhins' },
-    { name: 'Portpatrick', slug: 'portpatrick',x: 104, y: 398, kind: 'rhins' },
-    { name: 'Portmontgomery', slug: 'portmontgomery', x: 96, y: 470, kind: 'rhins' },
-    { name: 'Stoneykirk',  slug: 'stoneykirk', x: 196, y: 500, kind: 'rhins' },
-    { name: 'Kirkmaiden',  slug: 'kirkmaiden', x: 214, y: 726, kind: 'rhins' },
-    { name: 'Glenluce',    slug: 'glenluce',   x: 336, y: 372, kind: 'rhins' },
-    { name: 'Wigtown',     slug: 'wigtown',    x: 542, y: 356, kind: 'neighbour' },
+    { name: 'New Luce',    slug: 'new-kirk-of-glenluce', x: 360, y: 160, kind: 'rhins' },
+    { name: 'Kirkcolm',    slug: 'kirkcolm',   x: 150, y: 148, kind: 'rhins' },
+    { name: 'Leswalt',     slug: 'leswalt',    x: 148, y: 270, kind: 'rhins' },
+    { name: 'Inch',        slug: 'inch',       x: 256, y: 250, kind: 'rhins' },
+    { name: 'Stranraer',   slug: 'stranraer',  x: 210, y: 330, kind: 'rhins' },
+    { name: 'Portpatrick', slug: 'portpatrick',x: 118, y: 400, kind: 'rhins' },
+    { name: 'Portmontgomery', slug: 'portmontgomery', x: 118, y: 476, kind: 'rhins' },
+    { name: 'Stoneykirk',  slug: 'stoneykirk', x: 196, y: 512, kind: 'rhins' },
+    { name: 'Kirkmaiden',  slug: 'kirkmaiden', x: 210, y: 720, kind: 'rhins' },
+    { name: 'Glenluce',    slug: 'glenluce',   x: 340, y: 368, kind: 'rhins' },
+    { name: 'Wigtown',     slug: 'wigtown',    x: 540, y: 350, kind: 'neighbour' },
   ],
-  // Stylized landmass + sea inlets, drawn tonally (no bright blue) for an
-  // engraved-map feel. Loch Ryan bites in from the north; Luce Bay from the SE.
-  land: 'M104 96 C150 70 210 74 250 92 C300 74 360 84 402 104 '
-      + 'C470 120 560 150 596 210 C612 300 590 372 560 392 '
-      + 'C470 400 470 470 452 520 C300 560 264 640 236 760 '
-      + 'C226 800 196 800 186 762 C150 640 176 560 150 520 '
-      + 'C118 470 96 470 92 420 C76 340 70 250 78 180 C84 140 92 112 104 96 Z',
-  lochRyan: 'M196 96 C214 160 226 250 214 320 C210 344 176 344 172 320 '
-          + 'C160 250 150 160 158 100 C168 80 190 80 196 96 Z',
-  luceBay: 'M470 470 C440 560 360 620 300 660 C420 620 470 540 500 470 '
-         + 'C512 440 482 440 470 470 Z',
+  // Stylized landmass drawn tonally (no bright blue) for an engraved-map feel.
+  // Luce Bay is carved into the outline itself as a real southern bay; Loch
+  // Ryan is overlaid as a narrow northern sea inlet with Stranraer at its head.
+  land: 'M96 150 C110 110 140 88 190 82 C260 74 330 78 396 100 '
+      + 'C480 118 556 150 594 232 C608 300 600 356 566 408 '
+      + 'C532 452 486 486 456 520 C444 556 434 604 428 646 '        // SE coast + east shore of Luce Bay
+      + 'C388 588 372 512 352 460 C344 446 326 446 318 460 '        // up to the bay head (below Glenluce)
+      + 'C300 512 290 588 282 646 C276 688 262 716 244 744 '        // down the west shore of the bay
+      + 'C226 772 202 782 184 762 C166 742 176 668 164 604 '        // round the Mull of Galloway (Kirkmaiden)
+      + 'C150 548 108 500 88 452 C72 388 68 300 74 236 '            // west coast (Irish Sea)
+      + 'C80 190 84 166 96 150 Z',
+  lochRyan: 'M160 56 C156 150 176 246 200 304 C224 246 238 150 234 62 '
+          + 'C218 50 176 48 160 56 Z',
+  luceBay: null,
 };
 
 async function initMap() {
@@ -778,12 +781,12 @@ function renderMap(volId, index) {
   const svg = `<svg viewBox="${geo.viewBox}" class="map-svg" role="img" aria-label="Map of the parishes of the Presbytery of Stranraer">
     <rect x="0" y="0" width="640" height="840" fill="var(--map-sea)"></rect>
     <path d="${geo.land}" fill="var(--map-land)" stroke="var(--map-coast)" stroke-width="2"></path>
-    <path d="${geo.lochRyan}" fill="var(--map-sea)" stroke="var(--map-coast)" stroke-width="1.2"></path>
-    <path d="${geo.luceBay}" fill="var(--map-sea)" stroke="var(--map-coast)" stroke-width="1.2"></path>
-    <text x="176" y="210" class="map-water" transform="rotate(78 176 210)">Loch Ryan</text>
-    <text x="392" y="600" class="map-water">Luce Bay</text>
-    <text x="70" y="330" class="map-water" transform="rotate(-90 70 330)">Irish Sea</text>
-    <text x="596" y="470" class="map-water" text-anchor="end">the Machars →</text>
+    ${geo.lochRyan ? `<path d="${geo.lochRyan}" fill="var(--map-sea)" stroke="var(--map-coast)" stroke-width="1.2"></path>` : ''}
+    ${geo.luceBay ? `<path d="${geo.luceBay}" fill="var(--map-sea)" stroke="var(--map-coast)" stroke-width="1.2"></path>` : ''}
+    <text x="204" y="200" class="map-water" transform="rotate(80 204 200)">Loch Ryan</text>
+    <text x="352" y="574" class="map-water" text-anchor="middle">Luce Bay</text>
+    <text x="60" y="340" class="map-water" transform="rotate(-90 60 340)">Irish Sea</text>
+    <text x="602" y="486" class="map-water" text-anchor="end">the Machars →</text>
     ${markers}
   </svg>`;
 

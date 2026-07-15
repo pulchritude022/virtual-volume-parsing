@@ -540,6 +540,37 @@ def build_volume(vol_cfg: dict, with_images: bool, events_cfg: list[dict], alias
         return [{"slug": e["slug"], "name": e["name"], "count": e["count"],
                   "has_narrative": e.get("narrative") is not None} for e in coll]
 
+    # ---- co-occurrence graph among the most-mentioned people -------------- #
+    # Nodes = the top people; edges = how often two are named in the same
+    # opening (already computed as related_people). Coloured by the event each
+    # person co-occurs with most. Consumed by the Charts page's network view.
+    TOP_N = 40
+    top_people = finalized["person"][:TOP_N]
+    top_slugs = {e["slug"] for e in top_people}
+    graph_nodes = []
+    for e in top_people:
+        dom = max(e["related_events"], key=lambda r: r["count"])["name"] if e["related_events"] else None
+        graph_nodes.append({"slug": e["slug"], "name": e["name"], "count": e["count"], "event": dom})
+    graph_edges: dict[tuple[str, str], int] = {}
+    for e in top_people:
+        a = e["slug"]
+        for r in e["related_people"]:
+            info = resolve.get(entity_key(r["name"]))
+            if not info or info["kind"] != "person":
+                continue
+            b = info["slug"]
+            if b == a or b not in top_slugs:
+                continue
+            key = tuple(sorted((a, b)))
+            graph_edges[key] = max(graph_edges.get(key, 0), r["count"])
+    graph = {
+        "volume": volume_id,
+        "nodes": graph_nodes,
+        "edges": [{"a": k[0], "b": k[1], "w": w} for k, w in graph_edges.items() if w >= 2],
+    }
+    (out_dir / "graph.json").write_text(
+        json.dumps(graph, ensure_ascii=False, indent=2), encoding="utf-8")
+
     summaries_by_kind = {kind: _summ(finalized[kind]) for kind in ENTITY_KINDS}
     (ent_dir).mkdir(parents=True, exist_ok=True)
     (ent_dir / "index.json").write_text(

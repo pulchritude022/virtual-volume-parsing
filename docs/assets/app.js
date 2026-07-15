@@ -892,6 +892,239 @@ function renderTimeline(volId, index) {
   return el('div', {}, head, el('div', { class: 'card tl-card' }, chart), legend, renderFooter());
 }
 
+/* ---------------------------------------------------------------- charts */
+
+const PALETTE = ['#7a2e2e', '#9a7b32', '#3f7d4f', '#4a6a85', '#845a8a',
+                 '#a85b4a', '#5c8a86', '#8a7a4a', '#b3801f', '#607d8b'];
+
+/* First-match partition of every topic-mention into one thematic bucket, so
+   the bars are a true distribution of what the court spent its time on. Order
+   matters (a topic lands in the first bucket it matches). */
+const WORK_CATEGORIES = [
+  { key: 'Moral discipline', match: ['fornicat', 'adulter', 'incest', 'bigamy', 'paternit',
+      'uncleann', 'cohabit', 'sabbath', 'drunken', 'alehouse', 'dicing', 'carding', 'slander',
+      'calumny', 'defam', 'lying', 'witch', 'charming', 'riddle', 'divination', 'superstit',
+      'scandal', 'repentance', 'sackcloth', 'satisfaction', 'purgation', 'penance', 'discipline',
+      'excommunicat', 'contumacy', 'compurgation', 'usury', 'annualrent', 'clandestine', 'marriage'] },
+  { key: 'Malignancy & the wars', match: ['malignan', 'engagement', 'covenant', 'protest',
+      'resolution', 'union', 'levy', 'mobilis', 'committee-of-war', 'committee of war', 'western-assoc',
+      'army', 'soldier', 'regiment', 'muster', 'quartering', 'montrose', 'seaforth', 'combat', 'duel',
+      'assault', 'robbery', 'oppression', 'sedition', 'act of classes', 'act-of-classes', 'dunbar', 'cromwell'] },
+  { key: 'Planting & kirk fabric', match: ['plant', 'admission', 'ordination', 'call', 'glebe',
+      'manse', 'stipend', 'teind', 'mortification', 'kirk-repair', 'kirk fabric', 'kirk-fabric',
+      'reparation', 'kirk-build', 'bridge', 'annexation', 'division', 'boundary', 'perambulation',
+      'presentation', 'patronage', 'vacancy', 'transportation'] },
+  { key: 'Poor, widows & orphans', match: ['poor', 'widow', 'orphan', 'refugee', 'charity',
+      'contribution', 'collection', 'relief', 'beggar'] },
+  { key: 'Ministry & examination', match: ['exercise', 'common-head', 'common head', 'privy-trial',
+      'privy trial', 'visitation', 'testimonial', 'testificat', 'trial', 'probation', 'catech',
+      'family-worship', 'family worship', 'doctrine', 'privy-censure', 'schoolmaster', 'schooling', 'school'] },
+  { key: 'Courts & correspondence', match: ['correspond', 'ireland', 'ulster', 'dublin', 'synod',
+      'general-assembly', 'general assembly', 'commission', 'supplication', 'appeal', 'appellation',
+      'parliament', 'wigton', 'wigtown', 'letter', 'referral', 'remit', 'edinburgh'] },
+  { key: 'Court procedure', match: ['moderator', 'clerk', 'register', 'sederunt', 'election',
+      'office-rotation', 'office rotation', 'summons', 'citation', 'cited', 'process', 'libel',
+      'witness', 'deposition', 'oath', 'session-book', 'session book', 'act ', 'legal', 'due-process'] },
+];
+
+const SIN_CATEGORIES = [
+  { key: 'Sexual (fornication, adultery, incest)', color: 0, match: ['fornicat', 'adulter', 'incest', 'bigamy', 'paternit', 'uncleann', 'cohabit', 'clandestine'] },
+  { key: 'Slander & seditious speech', color: 3, match: ['slander', 'calumny', 'defam', 'lying', 'sedition', 'contempt'] },
+  { key: 'Violence (duel, combat, assault)', color: 5, match: ['duel', 'combat', 'assault', 'robbery', 'oppression', 'barn-breaking', 'tumult'] },
+  { key: 'Sabbath & drink', color: 2, match: ['sabbath', 'drunken', 'alehouse', 'dicing', 'carding'] },
+  { key: 'Witchcraft & superstition', color: 4, match: ['witch', 'charming', 'riddle', 'divination', 'superstit', 'sieve'] },
+  { key: 'Usury & the moral economy', color: 8, match: ['usury', 'annualrent', 'engross'] },
+];
+
+function partition(topics, categories) {
+  const totals = categories.map((c) => ({ ...c, count: 0, topics: 0 }));
+  let uncategorized = 0, uncatTopics = 0;
+  for (const t of topics) {
+    const name = String(t.name).toLowerCase();
+    const idx = categories.findIndex((c) => c.match.some((m) => name.includes(m)));
+    if (idx >= 0) { totals[idx].count += t.count; totals[idx].topics += 1; }
+    else { uncategorized += t.count; uncatTopics += 1; }
+  }
+  return { totals, uncategorized, uncatTopics };
+}
+
+async function initCharts() {
+  const root = $('#charts');
+  try {
+    const { volumes } = await getJSON('data/volumes.json');
+    const volId = qs('vol') || (volumes && volumes[0] && volumes[0].id);
+    if (!volId) { root.replaceChildren(el('p', { class: 'empty' }, 'No volume available.')); return; }
+    const index = await getJSON(`data/${volId}/index.json`);
+    let graph = null;
+    try { graph = await getJSON(`data/${volId}/graph.json`); } catch { /* optional */ }
+    root.replaceChildren(renderCharts(volId, index, graph));
+  } catch (err) {
+    root.replaceChildren(el('div', { class: 'callout' },
+      el('b', {}, 'Could not load the charts. '), esc(err.message)));
+  }
+}
+
+function barChart(title, hint, rows, opts = {}) {
+  const max = Math.max(1, ...rows.map((r) => r.count));
+  const sec = el('div', { class: 'section chart-block' },
+    el('h2', {}, title),
+    hint ? el('p', { class: 'hint' }, hint) : null);
+  const list = el('div', { class: 'bars' });
+  rows.forEach((r, i) => {
+    const pct = (r.count / max) * 100;
+    const color = opts.color != null ? PALETTE[opts.color] : PALETTE[(r.color != null ? r.color : i) % PALETTE.length];
+    list.append(el('div', { class: 'bar-row' },
+      el('div', { class: 'bar-label', title: r.key }, r.key),
+      el('div', { class: 'bar-track' },
+        el('div', { class: 'bar-fill', style: `width:${pct}%; background:${color}` })),
+      el('div', { class: 'bar-val' }, String(r.count))));
+  });
+  sec.append(list);
+  return sec;
+}
+
+function renderCharts(volId, index, graph) {
+  const topics = index.topics || [];
+  const totalMentions = topics.reduce((s, t) => s + t.count, 0);
+
+  const work = partition(topics, WORK_CATEGORIES);
+  const workRows = work.totals.map((t) => ({ key: t.key, count: t.count }))
+    .sort((a, b) => b.count - a.count);
+  workRows.push({ key: 'Other / miscellaneous', count: work.uncategorized });
+
+  const sin = partition(topics, SIN_CATEGORIES);
+  const sinRows = sin.totals.map((t) => ({ key: t.key, count: t.count, color: t.color }))
+    .sort((a, b) => b.count - a.count);
+
+  const head = el('div', { class: 'hero' },
+    el('div', { class: 'eyebrow' }, 'Charts & networks'),
+    el('h1', {}, 'The shape of eleven years'),
+    el('p', { class: 'sub' },
+      'What did a Scottish presbytery actually spend its time on? These charts count every ' +
+      'theme tagged across the ' + index.transcribed_count + ' transcribed openings — ' +
+      totalMentions.toLocaleString() + ' topic-mentions in all — and the network below maps ' +
+      'who appears alongside whom.'));
+
+  const c1 = barChart('The work of the court',
+    'Every topic-mention sorted into one thematic bucket — a rough map of where the court’s ' +
+    'attention went. Discipline of morals and the business of the wars dominate.',
+    workRows);
+
+  const c2 = barChart('The discipline of sin',
+    'Within moral discipline, the kinds of sin brought before the presbytery. Sexual discipline ' +
+    'is far and away the largest category — the parish sessions sent up their hardest cases.',
+    sinRows);
+
+  const net = graph ? renderNetwork(volId, graph) : null;
+
+  return el('div', {}, head, c1, c2, net || document.createComment('no graph'), renderFooter());
+}
+
+function renderNetwork(volId, graph) {
+  const nodes = graph.nodes.slice();
+  // Cluster colour by dominant event; order nodes around the ring by cluster
+  // then by count so co-occurring people sit together and chords stay short.
+  const events = [...new Set(nodes.map((n) => n.event).filter(Boolean))];
+  const colorOf = (ev) => ev == null ? '#8a8377' : PALETTE[events.indexOf(ev) % PALETTE.length];
+  nodes.sort((a, b) => {
+    const ea = a.event || '~', eb = b.event || '~';
+    if (ea !== eb) return ea < eb ? -1 : 1;
+    return b.count - a.count;
+  });
+
+  const cx = 470, cy = 430, R = 250;
+  const pos = {};
+  const N = nodes.length;
+  nodes.forEach((n, i) => {
+    const ang = (i / N) * Math.PI * 2 - Math.PI / 2;
+    pos[n.slug] = { x: cx + R * Math.cos(ang), y: cy + R * Math.sin(ang), ang };
+  });
+  const maxCount = Math.max(...nodes.map((n) => n.count));
+  const rFor = (c) => 4 + Math.sqrt(c / maxCount) * 11;
+  const maxW = Math.max(...graph.edges.map((e) => e.w));
+
+  // edges as chords bowed toward the centre
+  const edgeSvg = graph.edges.map((e) => {
+    const a = pos[e.a], b = pos[e.b];
+    if (!a || !b) return '';
+    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    const ctrlX = cx + (mx - cx) * 0.3, ctrlY = cy + (my - cy) * 0.3;
+    const op = (0.05 + 0.5 * Math.sqrt(e.w / maxW)).toFixed(3);
+    return `<path class="net-edge" data-a="${e.a}" data-b="${e.b}" d="M${a.x.toFixed(1)} ${a.y.toFixed(1)} Q${ctrlX.toFixed(1)} ${ctrlY.toFixed(1)} ${b.x.toFixed(1)} ${b.y.toFixed(1)}" fill="none" stroke="var(--ink-faint)" stroke-opacity="${op}" stroke-width="${(0.4 + 1.8 * (e.w / maxW)).toFixed(2)}"></path>`;
+  }).join('');
+
+  const nodeSvg = nodes.map((n) => {
+    const p = pos[n.slug];
+    const r = rFor(n.count);
+    const left = Math.cos(p.ang) < 0;
+    const lx = p.x + Math.cos(p.ang) * (r + 6);
+    const ly = p.y + Math.sin(p.ang) * (r + 6);
+    const deg = p.ang * 180 / Math.PI + (left ? 180 : 0);
+    const nm = cleanEntity(n.name);
+    const label = nm.length > 20 ? nm.slice(0, 19) + '…' : nm;
+    const href = `entity.html?vol=${encodeURIComponent(volId)}&kind=person&slug=${encodeURIComponent(n.slug)}`;
+    return `<a href="${href}" class="net-node" data-slug="${n.slug}">
+      <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r.toFixed(1)}" fill="${colorOf(n.event)}" stroke="var(--bg-panel)" stroke-width="1.2"></circle>
+      <text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" class="net-label" text-anchor="${left ? 'end' : 'start'}" transform="rotate(${deg.toFixed(1)} ${lx.toFixed(1)} ${ly.toFixed(1)})">${esc(label)}</text>
+    </a>`;
+  }).join('');
+
+  const svg = `<svg viewBox="0 0 940 900" class="net-svg" role="img" aria-label="Co-occurrence network of the most-named people">
+    <g class="net-edges">${edgeSvg}</g>
+    <g class="net-nodes">${nodeSvg}</g>
+  </svg>`;
+
+  const legend = el('div', { class: 'net-legend chips' },
+    ...events.map((ev, i) => el('span', { class: 'chip' },
+      el('span', { class: 'net-swatch', style: `background:${PALETTE[i % PALETTE.length]}` }), shortEvent(ev))));
+
+  const sec = el('div', { class: 'section' },
+    el('h2', {}, 'Who appears with whom'),
+    el('p', { class: 'hint' },
+      'The 40 most-named people, placed on a ring and grouped by the controversy each is most ' +
+      'entangled in; a chord joins two people for every opening that names them both (heavier = ' +
+      'more often). Hover a name to isolate its ties; click to open the person. The dense core is ' +
+      'the ministers, who sat together at every meeting.'));
+  const wrap = el('div', { class: 'card net-card' });
+  wrap.innerHTML = svg;
+  sec.append(wrap, legend);
+
+  // hover isolation — attach synchronously (the nodes already exist in this
+  // detached subtree; listeners persist when it is inserted into the page).
+  const svgEl = wrap.querySelector('svg');
+  if (svgEl) {
+    svgEl.querySelectorAll('.net-node').forEach((node) => {
+      const slug = node.getAttribute('data-slug');
+      node.addEventListener('mouseenter', () => {
+        svgEl.classList.add('isolating');
+        svgEl.querySelectorAll('.net-edge').forEach((ed) => {
+          const on = ed.getAttribute('data-a') === slug || ed.getAttribute('data-b') === slug;
+          ed.classList.toggle('on', on);
+        });
+        const nbrs = new Set([slug]);
+        svgEl.querySelectorAll('.net-edge.on').forEach((ed) => {
+          nbrs.add(ed.getAttribute('data-a')); nbrs.add(ed.getAttribute('data-b'));
+        });
+        svgEl.querySelectorAll('.net-node').forEach((nd) =>
+          nd.classList.toggle('dim', !nbrs.has(nd.getAttribute('data-slug'))));
+      });
+      node.addEventListener('mouseleave', () => {
+        svgEl.classList.remove('isolating');
+        svgEl.querySelectorAll('.net-edge.on').forEach((ed) => ed.classList.remove('on'));
+        svgEl.querySelectorAll('.net-node.dim').forEach((nd) => nd.classList.remove('dim'));
+      });
+    });
+  }
+
+  return sec;
+}
+
+function shortEvent(ev) {
+  if (!ev) return 'Other';
+  return ev.replace(/^The /, '').replace(/:.*$/, '').replace(/\s*\(.*\)$/, '')
+           .replace(/’s .*/, '’s case').slice(0, 34);
+}
+
 /* --------------------------------------------------------------- dispatch */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -902,4 +1135,5 @@ document.addEventListener('DOMContentLoaded', () => {
   else if ($('#contents')) initContents();
   else if ($('#map')) initMap();
   else if ($('#timeline')) initTimeline();
+  else if ($('#charts')) initCharts();
 });

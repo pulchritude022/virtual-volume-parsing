@@ -785,6 +785,113 @@ function renderMap(volId, index) {
   return el('div', {}, head, el('div', { class: 'card map-card' }, wrap), legend, renderFooter());
 }
 
+/* --------------------------------------------------------------- timeline */
+
+/* National / covenanting-era events, dated to the month, for the timeline's
+   upper track. Presentation context (not record data). `event` links a flag
+   to a wiki event page where the volume documents the local reaction. */
+const NATIONAL_EVENTS = [
+  { t: 1643.67, label: 'Solemn League and Covenant', note: 'Scotland allies with the English Parliament' },
+  { t: 1645.67, label: 'Philiphaugh', note: 'Montrose’s royalists routed; thanksgiving kept in the bounds' },
+  { t: 1646.33, label: 'Charles I surrenders to the Scots' },
+  { t: 1647.92, label: 'The Engagement', note: 'secret treaty to invade England for the King',
+    event: 'the-post-engagement-purge-of-malignants' },
+  { t: 1648.58, label: 'Preston', note: 'the Engager army destroyed' },
+  { t: 1648.83, label: 'Covenant renewed', note: 'Solemn Acknowledgment; the purge of compliers',
+    event: 'the-renewal-of-the-covenant-1648-1649' },
+  { t: 1649.05, label: 'Charles I executed', note: '30 Jan 1649; the Act of Classes follows' },
+  { t: 1650.67, label: 'Dunbar', note: 'Cromwell shatters the Scots army (3 Sep 1650)',
+    event: 'the-dunbar-prisoners-relief' },
+  { t: 1651.45, label: 'The Public Resolutions', note: 'readmitting malignants splits the Kirk',
+    event: 'the-resolutioner-protester-schism' },
+  { t: 1651.67, label: 'Worcester', note: 'the last Scots royalist army defeated' },
+  { t: 1652.12, label: 'The Tender of Union', note: 'England moves to absorb Scotland',
+    event: 'the-cromwellian-conquest-and-the-tender-of-union' },
+];
+
+const T_MIN = 1640.7, T_MAX = 1652.6;
+const tx = (t) => ((t - T_MIN) / (T_MAX - T_MIN)) * 100;
+
+async function initTimeline() {
+  const root = $('#timeline');
+  try {
+    const { volumes } = await getJSON('data/volumes.json');
+    const volId = qs('vol') || (volumes && volumes[0] && volumes[0].id);
+    if (!volId) { root.replaceChildren(el('p', { class: 'empty' }, 'No volume available.')); return; }
+    const index = await getJSON(`data/${volId}/index.json`);
+    root.replaceChildren(renderTimeline(volId, index));
+  } catch (err) {
+    root.replaceChildren(el('div', { class: 'callout' },
+      el('b', {}, 'Could not load the timeline. '), esc(err.message)));
+  }
+}
+
+function renderTimeline(volId, index) {
+  // Volume "pulse": openings per year (page.year, falling back to year_sections).
+  const groups = groupByYear(index.pages, index.year_sections)
+    .filter((g) => g.year != null);
+  const maxYear = Math.max(1, ...groups.map((g) => g.pages.length));
+  const firstSlugForYear = (g) => g.pages[0] && g.pages[0].slug;
+
+  const axis = el('div', { class: 'tl-axis' });
+  // year gridlines + labels
+  for (let y = 1641; y <= 1652; y++) {
+    axis.append(el('div', { class: 'tl-year', style: `left:${tx(y)}%` },
+      el('span', { class: 'tl-year-tick' }),
+      el('span', { class: 'tl-year-lbl' }, String(y))));
+  }
+
+  // volume pulse: a bar per year under the axis
+  const pulse = el('div', { class: 'tl-pulse' });
+  for (const g of groups) {
+    const h = 10 + Math.round((g.pages.length / maxYear) * 92);
+    const left = tx(g.year), width = tx(g.year + 1) - tx(g.year);
+    pulse.append(el('a', {
+      class: 'tl-bar',
+      href: `viewer.html?vol=${encodeURIComponent(volId)}&img=${encodeURIComponent(firstSlugForYear(g))}`,
+      style: `left:${left}%; width:calc(${width}% - 4px); height:${h}px`,
+      title: `${g.year}: ${g.pages.length} opening${g.pages.length === 1 ? '' : 's'}`,
+    }, el('span', { class: 'tl-bar-n' }, g.pages.length)));
+  }
+
+  // national flags above the axis, staggered across 3 tiers to avoid overlap
+  const flags = el('div', { class: 'tl-flags' });
+  NATIONAL_EVENTS.forEach((n, i) => {
+    const tier = i % 3;
+    const href = n.event ? `entity.html?vol=${encodeURIComponent(volId)}&kind=event&slug=${n.event}` : null;
+    const card = el(href ? 'a' : 'div', {
+      class: `tl-flag tier-${tier}${href ? ' link' : ''}`,
+      style: `left:${tx(n.t)}%`,
+      href,
+    },
+      el('span', { class: 'tl-flag-dot' }),
+      el('span', { class: 'tl-flag-stem' }),
+      el('span', { class: 'tl-flag-card' },
+        el('b', {}, n.label),
+        n.note ? el('span', { class: 'tl-flag-note' }, n.note) : null,
+        n.event ? el('span', { class: 'tl-flag-go' }, 'see how the presbytery reacted →') : null));
+    flags.append(card);
+  });
+
+  const chart = el('div', { class: 'tl-chart' }, flags, axis, pulse);
+
+  const head = el('div', { class: 'hero' },
+    el('div', { class: 'eyebrow' }, 'Timeline · 1641–1652'),
+    el('h1', {}, 'The record against the national storm'),
+    el('p', { class: 'sub' },
+      'The lower bars are the pulse of the presbytery — how many openings survive from each ' +
+      'year. Above the line are the national convulsions of the covenanting revolution. ' +
+      'The record visibly thickens as the crisis arrives: the purge of 1648–49, the ruin ' +
+      'after Dunbar, and the schism of the final years. Flags with an arrow link to the ' +
+      'presbytery’s own response.'));
+
+  const legend = el('p', { class: 'hint', style: 'margin-top:18px' },
+    'Bars link to the first opening of that year in the viewer; national flags with an arrow ' +
+    'open the matching event page. Positions are to scale by date.');
+
+  return el('div', {}, head, el('div', { class: 'card tl-card' }, chart), legend, renderFooter());
+}
+
 /* --------------------------------------------------------------- dispatch */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -794,4 +901,5 @@ document.addEventListener('DOMContentLoaded', () => {
   else if ($('#glossary')) initGlossary();
   else if ($('#contents')) initContents();
   else if ($('#map')) initMap();
+  else if ($('#timeline')) initTimeline();
 });

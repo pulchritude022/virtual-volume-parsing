@@ -39,6 +39,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CONFIG = ROOT / "config" / "volumes.yaml"
 EVENTS_CONFIG = ROOT / "config" / "events.yaml"
 ALIASES_CONFIG = ROOT / "config" / "aliases.yaml"
+KINSHIP_CONFIG = ROOT / "config" / "kinship.yaml"
 DATA = ROOT / "data"
 DOCS = ROOT / "docs"
 SITE_DATA = DOCS / "data"
@@ -189,6 +190,53 @@ def load_aliases_config() -> dict:
     if not ALIASES_CONFIG.exists():
         return {}
     return yaml.safe_load(ALIASES_CONFIG.read_text(encoding="utf-8")) or {}
+
+
+def load_kinship_config() -> list[dict]:
+    if not KINSHIP_CONFIG.exists():
+        return []
+    cfg = yaml.safe_load(KINSHIP_CONFIG.read_text(encoding="utf-8")) or {}
+    return cfg.get("relations", [])
+
+
+# How each `rel` reads from side A ("a is the <A> of b") and from side B.
+KIN_LABEL = {
+    "son": ("son of", "parent of"),
+    "daughter": ("daughter of", "parent of"),
+    "father": ("father of", "child of"),
+    "mother": ("mother of", "child of"),
+    "brother": ("brother of", "brother of"),
+    "sister": ("sister of", "sister of"),
+    "spouse": ("spouse of", "spouse of"),
+}
+
+
+def build_kinship(kinship_cfg: list[dict], resolve: dict) -> dict[str, list[dict]]:
+    """Attach folio-attested kin ties to the people they name.
+
+    Returns {person_slug: [{relation, name, slug, cite, note}, ...]}. Both
+    directions of every edge are recorded, phrased from each person's side;
+    names that were never extracted as an entity are kept but left unlinked.
+    """
+    by_slug: dict[str, list[dict]] = {}
+    for rel in kinship_cfg:
+        a, b = rel.get("a"), rel.get("b")
+        rkind = rel.get("rel", "")
+        if not a or not b or rkind not in KIN_LABEL:
+            continue
+        a_lbl, b_lbl = KIN_LABEL[rkind]
+        info_a = resolve.get(entity_key(a))
+        info_b = resolve.get(entity_key(b))
+        slug_a = info_a["slug"] if info_a and info_a["kind"] == "person" else None
+        slug_b = info_b["slug"] if info_b and info_b["kind"] == "person" else None
+        cite, note = rel.get("cite"), rel.get("note")
+        if slug_a:
+            by_slug.setdefault(slug_a, []).append(
+                {"relation": a_lbl, "name": clean_entity(b), "slug": slug_b, "cite": cite, "note": note})
+        if slug_b:
+            by_slug.setdefault(slug_b, []).append(
+                {"relation": b_lbl, "name": clean_entity(a), "slug": slug_a, "cite": cite, "note": note})
+    return by_slug
 
 
 def compute_page_events(events_cfg: list[dict], image_number: int | None,
@@ -373,7 +421,8 @@ def build_glossary(volume_id: str) -> dict | None:
     return {"volume": volume_id, "title": title, "terms": terms}
 
 
-def build_volume(vol_cfg: dict, with_images: bool, events_cfg: list[dict], aliases_cfg: dict) -> dict | None:
+def build_volume(vol_cfg: dict, with_images: bool, events_cfg: list[dict], aliases_cfg: dict,
+                 kinship_cfg: list[dict] | None = None) -> dict | None:
     volume_id = vol_cfg["id"]
     tdir = DATA / volume_id / "transcriptions"
     if not tdir.exists():
@@ -524,6 +573,8 @@ def build_volume(vol_cfg: dict, with_images: bool, events_cfg: list[dict], alias
                         "kind": r["kind"] if r else None})
         return out
 
+    kin_by_slug = build_kinship(kinship_cfg or [], resolve)
+
     ent_dir = out_dir / "entities"
     for kind in ENTITY_KINDS:
         kdir = ent_dir / kind
@@ -533,6 +584,8 @@ def build_volume(vol_cfg: dict, with_images: bool, events_cfg: list[dict], alias
             doc = {**e, "volume": volume_id}
             for k in ENTITY_KINDS:
                 doc[RELATED_FIELD[k]] = _link(e[RELATED_FIELD[k]])
+            if kind == "person" and e["slug"] in kin_by_slug:
+                doc["kin"] = kin_by_slug[e["slug"]]
             (kdir / f"{e['slug']}.json").write_text(
                 json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
 
@@ -645,11 +698,12 @@ def main() -> None:
 
     events_cfg = load_events_config()
     aliases_cfg = load_aliases_config()
+    kinship_cfg = load_kinship_config()
 
     print(f"Building site data -> {SITE_DATA.relative_to(ROOT)}")
     summaries = []
     for vol in volumes:
-        summary = build_volume(vol, args.with_images, events_cfg, aliases_cfg)
+        summary = build_volume(vol, args.with_images, events_cfg, aliases_cfg, kinship_cfg)
         if summary:
             summaries.append(summary)
 

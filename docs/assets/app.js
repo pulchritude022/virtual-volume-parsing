@@ -590,6 +590,25 @@ function renderEntity(volId, e) {
         sub ? el('span', { class: 's' }, sub) : null));
   });
 
+  // Kin ties the manuscript itself states (folio-sourced), with citations.
+  const kinRows = (e.kin || []).map((k) => {
+    const nameNode = k.slug
+      ? el('a', { href: `entity.html?vol=${encodeURIComponent(volId)}&kind=person&slug=${encodeURIComponent(k.slug)}` }, cleanEntity(k.name))
+      : el('span', { class: 'kin-unlinked' }, cleanEntity(k.name));
+    const citeSlug = k.cite != null ? `img_${String(k.cite).padStart(4, '0')}` : null;
+    return el('div', { class: 'kin-row' },
+      el('span', { class: 'kin-rel' }, k.relation),
+      nameNode,
+      citeSlug ? el('a', { class: 'kin-cite',
+        href: `viewer.html?vol=${encodeURIComponent(volId)}&img=${citeSlug}` }, `img_${k.cite}`) : null,
+      k.note ? el('span', { class: 'kin-note' }, '— ' + k.note) : null);
+  });
+  const kinBlock = kinRows.length
+    ? el('div', { class: 'section' }, el('h2', {}, 'Kin & household'),
+        el('p', { class: 'hint' }, 'Relationships as the minutes themselves state them — the record gives fragments, not pedigrees. Each is cited to the opening that names it.'),
+        el('div', { class: 'kin-list' }, ...kinRows))
+    : null;
+
   const section = (title, kids) => kids && kids.length
     ? el('div', { class: 'section' }, el('h2', {}, title), ...kids) : null;
 
@@ -612,6 +631,7 @@ function renderEntity(volId, e) {
       'Consolidated from the transcribed openings below — an evidence index of every ',
       'appearance of this ', e.kind, ', with links to the manuscript opening. No written ',
       'narrative has been synthesized for this entity yet.'),
+    kinBlock,
     section(`Mentions (${mentionRows.length})`, mentionRows),
     section('Appears alongside', related),
     renderFooter());

@@ -1,0 +1,43 @@
+# Kinship & household ties AS STATED IN THE RECORD (strictly folio-sourced).
+#
+# The presbytery minutes are not a genealogy: they almost never give pedigrees.
+# What they DO give, in passing, are fragments — a gentry heir ("younger of X"),
+# a "brother to", a "spouse"/"relict". Every edge below is a relationship the
+# manuscript itself asserts, cited to the opening that states it. No external
+# genealogy is mixed in (per the project's "strictly from the folios" decision).
+#
+# Each entry reads "a is the <rel> of b". build_site.py (load_kinship) resolves
+# both names to their entity pages where those people were extracted, phrases
+# the tie from each person's side, and attaches it to their wiki page. `rel` is
+# one of: son, daughter, father, mother, brother, sister, spouse.
+
+relations:
+  - a: "McDowell of French, younger"
+    rel: son
+    b: "Uchtred McDowell of French"
+    cite: 22
+    note: "the young laird and heir of French; the principal accuser (\"persewer\") in the libel against Mr Gilbert Power"
+
+  - a: "Mr Thomas McDowall"
+    rel: brother
+    b: "the laird of Garthland"
+    cite: 212
+    note: "acted for the presbytery's business both in Galloway and in Ireland"
+
+  - a: "Thomas Baillie"
+    rel: son
+    b: "John Baillie in Laigh Cross"
+    cite: 194
+    note: "named in the robbery of an English traveller, pursued before the Committee of War"
+
+  - a: "Margaret Cobland"
+    rel: spouse
+    b: "David McWatters in Stoneykirk"
+    cite: 92
+    note: "she deserted him and crossed to Ireland — a desertion case"
+
+  - a: "[John] Agnew, younger of Lochnaw"
+    rel: brother
+    b: "Lieut-Col James Agnew"
+    cite: 136
+    note: "the Agnews of Lochnaw, hereditary Sheriffs of Wigtown"

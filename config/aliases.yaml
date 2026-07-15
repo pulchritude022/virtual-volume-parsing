@@ -34,6 +34,10 @@ person:
   "laird of garthland": "the laird of garthland"
   "macdowall of garthland": "the laird of garthland"
   "james mcdowall of garthland": "the laird of garthland"
+  # The young laird of French (the Power-case accuser) is written both ways.
+  "uchtred mcdowell younger of french": "mcdowell of french younger"
+  # "the laird of French" = the elder Uchtred; the son is always "younger of French".
+  "the laird of french": "uchtred mcdowell of french"
 
 place:
   # --- parishes of the Presbytery of Stranraer (the Rhins) ---

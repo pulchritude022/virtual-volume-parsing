@@ -432,9 +432,15 @@ function renderImagePane(page) {
   const img = page.image || {};
   let body;
   if (img.available && img.href) {
-    body = el('div', { class: 'image-frame' },
-      el('img', { src: img.href, alt: `Manuscript image ${page.image_number}`, loading: 'lazy',
-        onclick: (e) => openLightbox(e.target.src) }));
+    body = el('div', {},
+      el('div', { class: 'image-frame' },
+        el('img', { src: img.href, alt: `Manuscript image ${page.image_number}`, loading: 'lazy',
+          onclick: (e) => openLightbox(e.target.src) })),
+      el('div', { class: 'image-credit' },
+        '© National Records of Scotland (Crown copyright) · ',
+        img.source_url
+          ? el('a', { href: img.source_url, target: '_blank', rel: 'noopener' }, 'view on ScotlandsPeople ↗')
+          : 'shown by permission (NRS 20-image allowance)'));
   } else {
     body = el('div', { class: 'image-frame' }, el('div', { class: 'image-missing' },
       el('div', { class: 'lock' }, '📖'),

@@ -11,6 +11,11 @@ data/**/images/
 *.png
 !docs/**/*.png
 !reference/**/*.png
+# EXCEPTION: NRS permits displaying up to 20 images. data/<vol>/public-images/
+# holds the ≤20 openings we publish (the first 20 transcribed). These are the
+# ONLY manuscript images committed/published; everything else stays private.
+!data/*/public-images/
+!data/*/public-images/*.jpg
 # Source-image bundles (Crown copyright) — never publish
 data/**/*.zip
 *.tif

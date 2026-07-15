@@ -28,6 +28,11 @@ volumes:
       1651: 218
       1652: 248
     focus_case: "James & Alexander MacCulloch of Inshanks and Mool (folios 1-14)"
+    # NRS permits displaying up to 20 Crown-copyright images publicly. These
+    # openings (the first 20 transcribed) are committed under
+    # data/<id>/public-images/ and embedded in the published viewer; every
+    # other opening keeps its link back to ScotlandsPeople.
+    public_images: { min: 2, max: 21 }
 
 # Future inputs (same Stage-1 machinery, different source handling):
 #   - id: mccollough-journal-1796

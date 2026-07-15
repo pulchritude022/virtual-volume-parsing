@@ -89,6 +89,12 @@ volumes and to the ~1796 German-handwriting journal later.
   embedded; the site links back to ScotlandsPeople) while the **transcriptions/translations** — the
   project's own work — can be published. The image-free site is therefore GitHub-Pages-safe and
   stays within the NRS 20-image public cap.
+- **20-image publication, decided 2026-07-15:** NRS permits displaying up to 20 Crown-copyright
+  images. The first 20 transcribed openings (imgs 2–21) are committed under
+  `data/<vol>/public-images/` (the ONLY images un-gitignored) and embedded in the published viewer
+  with NRS attribution; `config/volumes.yaml: public_images` sets the range and `build_site.py`
+  copies only that set into `docs/` on every build. All other openings keep their ScotlandsPeople
+  link. This stays exactly within the 20-image cap.
 - Pages-ready via `docs/` + `.nojekyll`. Publishing is a deliberate opt-in (Settings → Pages →
   Deploy from a branch → `/docs`); until then it runs locally via `http.server`. Revisit showing
   images publicly only if NRS permission is obtained.

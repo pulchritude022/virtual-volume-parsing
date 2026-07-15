@@ -342,6 +342,8 @@ select.page-select {
 .image-missing {
   padding: 40px 24px; text-align: center; color: var(--ink-soft);
 }
+.image-credit { font-size: .74rem; color: var(--ink-faint); text-align: center; padding: 8px 4px 2px; }
+.image-credit a { color: var(--ink-soft); }
 .image-missing .lock { font-size: 1.8rem; margin-bottom: 8px; opacity: .7; }
 .image-missing p { max-width: 42ch; margin: 6px auto 16px; font-size: .92rem; }
 

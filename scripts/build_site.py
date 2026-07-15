@@ -468,15 +468,32 @@ def build_volume(vol_cfg: dict, with_images: bool, events_cfg: list[dict], alias
         local_abs = DATA / volume_id / "images" / f"{slug}.jpg"
         image_present = local_abs.exists()
 
-        if with_images and image_present:
+        # The ≤20 openings NRS lets us publish live under public-images/ and are
+        # embedded in EVERY build (they are committed, so the CI deploy has them).
+        pub = vol_cfg.get("public_images") or {}
+        plo, phi = pub.get("min"), pub.get("max")
+        is_public = (number is not None and plo is not None and phi is not None
+                     and plo <= number <= phi)
+        public_abs = DATA / volume_id / "public-images" / f"{slug}.jpg"
+
+        image_href = None
+        image_available = False
+        image_source = None
+        if is_public and public_abs.exists():
+            dest = out_dir / "images" / f"{slug}.jpg"
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(public_abs, dest)
+            image_href = f"data/{volume_id}/images/{slug}.jpg"
+            image_available = True
+            image_source = "nrs-public"
+        elif with_images and image_present:
+            # --with-images: local-only full build (every image; never published)
             dest = out_dir / "images" / f"{slug}.jpg"
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(local_abs, dest)
             image_href = f"data/{volume_id}/images/{slug}.jpg"
             image_available = True
-        else:
-            image_href = None
-            image_available = False
+            image_source = "local"
 
         page_people = [clean_entity(n) for n in (fm.get("people") or []) if clean_entity(n)]
         page_places = [clean_entity(n) for n in (fm.get("places") or []) if clean_entity(n)]
@@ -530,6 +547,7 @@ def build_volume(vol_cfg: dict, with_images: bool, events_cfg: list[dict], alias
                 "href": image_href,
                 "local_path": local_rel,
                 "source_url": source_url,
+                "source": image_source,
             },
             "folios": parsed["folios"],
             "notes": parsed["notes"],
